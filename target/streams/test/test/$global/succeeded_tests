@@ -1,8 +1,0 @@
-#Successful Tests
-#Sun Mar 02 03:52:25 PST 2014
-HeaderParser=1393761144959
-TestDb=1393758390458
-ApplicationRouter=1393761144984
-server.lib.ApplicationRouter=1393724887155
-ServerConnectionDispatcher=1393761145181
-ClientSocketContainer=1393758357533
