@@ -6,10 +6,17 @@ import java.io._
 import java.net.ServerSocket
 import java.net.Socket
 import scala.collection.mutable.ListBuffer
-import server.lib.{MvcRouter, HttpRequest, RequestConnectionFactory}
+import server.lib.{View, MvcRouter, HttpRequest, RequestConnectionFactory}
+
+import net.liftweb.json._
+import net.liftweb.json.JsonDSL._
+
+
 import scala.collection.mutable._
 import scala.collection.mutable
-
+import org.fusesource.scalate._
+import org.fusesource.scalate.{TemplateEngine, Binding, RenderContext}
+import java.io.File
 /**
  * Created by hernansaab on 2/26/14.
  */
@@ -17,6 +24,7 @@ import scala.collection.mutable
 case class ClientSocketContainer(sock: Socket)
 class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLogging {
   def receive: Actor.Receive = {
+
 
 
     case ClientSocketContainer(clientSocket) => {
@@ -81,7 +89,7 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
           if (bodyCharArray.size != 0)
             bodyCharArray.mkString("")
           else ""
-
+        println("---generate router-----")
         MvcRouter.route(request)
 
     }
@@ -103,6 +111,8 @@ object Main extends App {
   for (i <- 1 to Configuration.workers) {
     actors += system.actorOf(ServerConnectionDispatcher(i))
   }
+
+  View.startScalate()
 
   val routerProps = Props.empty.withRouter(RoundRobinRouter(actors))
   val actorRouter = system.actorOf(routerProps, "round-robin")

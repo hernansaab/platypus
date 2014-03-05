@@ -16,11 +16,16 @@ object Common {
       |
       |""".stripMargin
 
-  def response200HtmlNoCookies: String =
-    """
-      |Connection: close
-      |Vary:	Accept-Encoding
-      |Content-Type:	text/html; charset=iso-8859-1
-      |Server:	Apache
-      |""".stripMargin
+  def response200HtmlNoCookies(size:Int): String =
+
+    """HTTP/1.1·200·OK
+      |Accept-Ranges: bytes
+Connection: Keep-Alive
+Content-Length:${size}
+Content-Type: text/html
+Date: Wed, 05 Mar 2014 10:12:41 GMT
+Server:Platypus
+Vary:Accept-Encoding
+
+    """.stripMargin
 }

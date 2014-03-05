@@ -1,14 +1,23 @@
 package application.mvc.controllers
-
+import org.fusesource.scalate._
 import scala.text.Document
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
+import org.fusesource.scalate.{TemplateEngine, Binding, RenderContext}
+
+import java.io.File
+import server.lib.View
 
 /**
  * Created by hernansaab on 2/27/14.
  */
 object DefaultController {
   def index(get:String):String = {
+    val engine = new TemplateEngine
+    View.html("/index.ssp", Map("name" -> ("Hiram", "Chirino"), "city" -> "Tampa"))
+
+  }
+  def indexx(get:String):String = {
     """HTTP/1.1 200 OK
 Date: Thu, 27 Feb 2014 07:23:45 GMT
 Server: Apache/2.2.3 (CentOS)

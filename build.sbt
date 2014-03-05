@@ -18,4 +18,7 @@ libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 
 libraryDependencies +="mysql" % "mysql-connector-java" % "5.1.2"
 
+libraryDependencies +="org.fusesource.scalate" % "scalate-core_2.10" % "1.6.1"
+
+
 //∂logLevel := Level.Debug

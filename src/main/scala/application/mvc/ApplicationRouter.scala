@@ -11,6 +11,7 @@ import net.liftweb.json._
 object ApplicationRouter {
 
   def runViewController(r: HttpRequest):Boolean = {
+    println("parse path-----"+r.path)
     r.path match {
       case r"/index" =>  {
         r->>@ views.Default.index.html.display(controllers.DefaultController.index(r.command))

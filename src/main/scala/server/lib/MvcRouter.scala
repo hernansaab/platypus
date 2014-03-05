@@ -23,6 +23,7 @@ object MvcRouter{
 
     try{
       if(!_errorRoute(request)){
+        println("-----good-----no server error in request------")
         _route(request)
       }
     }catch {
