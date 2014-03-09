@@ -1,36 +1,55 @@
 package application.mvc
 
-import server.lib.HttpRequest
+
+import server.lib._
 import server.lib.Helpers._
 import application.mvc._
 import application.mvc
 import net.liftweb.json._
+
 /**
  * Created by hernansaab on 2/27/14.
  */
 object ApplicationRouter {
 
   def runViewController(r: HttpRequest):Boolean = {
-    println("parse path-----"+r.path)
-    r.path match {
-      case r"/index" =>  {
-        r->>@ views.Default.index.html.display(controllers.DefaultController.index(r.command))
+    println("path------"+r.x.path+"------")
+    r.x.path match {
+      case "" | "/" | r"/index"=> {
+        println("xxxxxxxx delay----"+(System.nanoTime() - r.x.startTime)/1000000)
+        val x = controllers.DefaultController.index(r.x.command)
+        println("xxxxxxxx delay after----"+(System.nanoTime() - r.x.startTime)/1000000)
+
+        r@<<- x //controller renders view directly through a ssp file set in the controller/action DefaultController/index
 
       }
-      case r"/test" =>  r->>@ views.Json(controllers.DefaultController.test())
+      case r"/index2"=> {
+        r@<<- controllers.DefaultController.index2(r.x.command) //controller renders view directly through a ssp file set in the controller/action DefaultController/index
+
+      }
+      case r"/index3"=> {
+        r@<<- controllers.DefaultController.index3(r.x.command) //controller renders view directly through a ssp file set in the controller/action DefaultController/index
+
+      }
+
+      case r"/test" =>  r@<<- views.Json(controllers.DefaultController.test())
 
       case r"^/shopping/api/v1/json" => {
-          r.command match {
-            case "POST" =>    r->>@ views.Json(controllers.ShoppingController.update(r.command, r.body))
-            case "GET" =>     r->>@ views.Json(controllers.ShoppingController.retrieve(r.command))
-            case "DELETE" =>  r->>@ views.Json(controllers.ShoppingController.remove(r.command))
-            case _ => r->>@ views.Json(controllers.ShoppingController(() => controllers.ShoppingController.unsupported(r.command)))
+        r.x.command match {
+            case "POST" =>    r@<<- views.Json.<-- (controllers.ShoppingController.update(r.x.command, r.x.body))
+            case "GET" =>     r@<<- views.Json.<-- (controllers.ShoppingController.retrieve(r.x.command))
+            case "DELETE" =>  r@<<- views.Json.<-- (controllers.ShoppingController.remove(r.x.command))
+            case _ => r@<<- views.Json.<-- (controllers.ShoppingController(() => controllers.ShoppingController.unsupported(r.x.command)))
 
         }
       }
-      case r"^.+/json$$" => r->>@ views.Json.genericUnsupported(r.path)
+      case r"^.*what/json$$" => r@<<- views.Json.<--(controllers.ShoppingController.response4("blah"))
+      case r"^.*/json$$" => r@<<- views.Json.<--(controllers.ShoppingController.unsupported("blah"))
 
-      case _ => r->>@ views.headers.Common.response415
+
+     // case r"^.+/json$$" => r@<<- views.Json.genericUnsupported(r.x.path)
+
+      case _ => r@<<- views.headers.Common.response415
     }
 
 

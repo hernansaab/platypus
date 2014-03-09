@@ -1,0 +1,11 @@
+<html>
+<head>
+<link rel="icon" type="image/ico" href="static/favicon.ico"/>
+</head>
+<body>
+<%@ var name:(String,String) %>
+<%@ var city:String %>
+<p> Hello this is a different index ${name._1} ${name._2}, from ${city}. </p>
+<p> ${server.lib.Bundler.bundleJs(Array("debug.js"))}</p>
+</body>
+</html>

@@ -12,7 +12,6 @@ class ServerConnectionDispatcher  extends FunSuite{
 //Date.valueOf("2011-04-01")
 
   test("User Insertions") {
-    println("------hey------")
     val users = TableQuery[Users]
     Database.forURL("jdbc:mysql://localhost:3306/shopping",
       driver = "com.mysql.jdbc.Driver",

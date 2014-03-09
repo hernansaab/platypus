@@ -23,4 +23,11 @@ object ShoppingController extends AppController{
       arg ->  ("status" -> "ERROR") ~ ("errors" -> List("Unsupported command."))
     )
   }
+
+  def response4(arg:String): JValue ={
+
+    (
+      arg ->  ("status" -> "DOUBT") ~ ("errors" -> List("I dont know if i should support this command command."))
+      )
+  }
 }

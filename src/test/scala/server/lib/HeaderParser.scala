@@ -1,3 +1,4 @@
+import java.io.{StringWriter, PrintWriter, ByteArrayOutputStream}
 import org.scalatest._
 import server.lib._
 /**
@@ -6,7 +7,6 @@ import server.lib._
 class HeaderParser   extends FunSuite{
 
   test("Header parser 1"){
-    println("------ssshey------")
 
     var header =
       """GET /index HTTP/1.1
@@ -14,12 +14,14 @@ class HeaderParser   extends FunSuite{
         |Content-Length: 100
         |""".stripMargin
 
-    assert(RequestConnectionFactory.parsePostSize(header) == 100)
-    val (command, path, argument, httpVersion) = RequestConnectionFactory.parseGetCommand(header)
-    assert(command == "GET")
-    assert(path == "/index")
-    assert(argument == null)
-    assert(httpVersion == "HTTP/1.1")
+
+    assert(RequestConnectionFactory.Utils.parsePostSize(header) == 100)
+    val strOut:StringWriter = new StringWriter();
+    val request = RequestConnectionFactory.generateRequestConnection(header, null, strOut, () => {})
+    assert(request.command == "GET")
+    assert(request.path == "/index")
+    assert(request.argument == null)
+    assert(request.httpVersion == "HTTP/1.1")
   }
 
 }

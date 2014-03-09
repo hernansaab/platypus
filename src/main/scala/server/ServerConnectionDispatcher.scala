@@ -6,7 +6,7 @@ import java.io._
 import java.net.ServerSocket
 import java.net.Socket
 import scala.collection.mutable.ListBuffer
-import server.lib.{View, MvcRouter, HttpRequest, RequestConnectionFactory}
+import server.lib._
 
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
@@ -17,11 +17,12 @@ import scala.collection.mutable
 import org.fusesource.scalate._
 import org.fusesource.scalate.{TemplateEngine, Binding, RenderContext}
 import java.io.File
+
 /**
  * Created by hernansaab on 2/26/14.
  */
 
-case class ClientSocketContainer(sock: Socket)
+
 class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLogging {
   def receive: Actor.Receive = {
 
@@ -30,74 +31,121 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
     case ClientSocketContainer(clientSocket) => {
       val out = new PrintWriter(clientSocket.getOutputStream, true)
       val in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
-
-      var break: Boolean = false;
-
       def cleanup() = {
-        out.flush()
-        clientSocket.close()
-        in.close()
-        out.close()
-      }
-      var headerCharArray= mutable.DoubleLinkedList('\n')
-
-      try{
-        while (!break) {
-          val char = in.read
-          //double line ends header
-          if(char == -1){
-            break = true
-          }else{
-            headerCharArray.append(mutable.DoubleLinkedList(char.toChar))
-          }
-
-          var rev = headerCharArray.reverseIterator
-
-          var current:Int = '\0'
-          var prev:Int = '\0'
-          var prevPrev:Int  = '\0'
-          var prevPrevPrev:Int = '\0'
-          if(headerCharArray.size >= 4 ) {
-            val(current, prev, prevPrev, prevPrevPrev) = (rev.next, rev.next, rev.next, rev.next)
-            if( current == '\n' && prev == '\r' && prevPrev == '\n' && prevPrevPrev == '\r'){
-              break = true
-            }
-          }
-
+        try{
+          out.flush()
+          clientSocket.close()
+          in.close()
+          out.close()
+        }catch{
+          case e: Exception => log.warning(("Connection possibly timed out before we close it---" + e.getMessage).+("\n---") + e.getStackTrace)
         }
-        headerCharArray = headerCharArray.drop(1)
-        val header =
-          if (headerCharArray.size != 0)
-            headerCharArray.mkString("")
-          else ""
-        break = true
-        var bodyCharArray= new ListBuffer[Char]()
-        val request = RequestConnectionFactory.generateRequestConnection(header, in, out, cleanup)
-        if (request.postSize != 0) {
-          var postSizeAcc:Long = 0;
-          while (!break) {
-            val char = in.read()
-            bodyCharArray += char.toChar
-            postSizeAcc += 1
 
-            if (postSizeAcc >= request.postSize || char == -1) {
-              break = true
-            }
-          }
-        }
-        request.body =
-          if (bodyCharArray.size != 0)
-            bodyCharArray.mkString("")
-          else ""
-        println("---generate router-----")
-        MvcRouter.route(request)
-
-    }
-      catch {
-        case e: IOException => log.error(("something went wrong---" + e.getMessage).+("\n---")+e.getStackTrace)
       }
+
+      runConnection(out, cleanup, in)
     }
+
+    case TransactionConnectionContainer(request) => {
+      ServerRouter.route(request)
+    }
+
     case msg => log.debug(s"Message from  actor $actorNumber: $msg")
+  }
+
+  def runConnection(out: Writer, cleanup:()=>Unit, in: BufferedReader) {
+
+
+    try {//work on timeout live
+
+
+      val request = RequestConnectionFactory.generateRequestConnection(in, out, cleanup)
+      lib.actionRouters.connectionRouters.router ! TransactionConnectionContainer(request)
+      var header:String = ""
+      var transaction:SingleTransaction = null
+      do{
+        try{
+          header  = readHeader(in)
+          transaction = new SingleTransaction(header)
+
+          transaction.body = readBody(request, in, transaction.postSize)
+
+        }catch {
+          case e:Throwable => {
+            header = ""
+            transaction = new SingleTransaction(null)
+            cleanup()
+          }
+
+        }
+
+        request.addTransaction(transaction)
+      }while(header != ""  && transaction.connectionType != "close")
+
+    }
+    catch {
+      case e: IOException => log.debug(("Connection possibly closed by client---" + e.getMessage).+("\n---"))
+    }
+
+  }
+
+
+  def readBody(request: HttpRequest, in: BufferedReader, size:Int):String = {
+    var break2 = true
+    var bodyCharArray = new ListBuffer[Char]()
+
+    if (size != 0) {
+      var postSizeAcc: Long = 0;
+      while (!break2) {
+        val char = in.read()
+        bodyCharArray += char.toChar
+        postSizeAcc += 1
+        if (char == -1) {
+          return null
+        }
+        if (postSizeAcc >= size) {
+          break2 = true
+        }
+      }
+    }
+
+      if (bodyCharArray.size != 0)
+        bodyCharArray.mkString("")
+      else ""
+  }
+
+  def readHeader(in: BufferedReader): String = {
+    var headerCharArray = mutable.DoubleLinkedList('\n')
+    var break: Boolean = false;
+    while (!break) {
+      val char = in.read
+      //double line ends header
+      if (char == -1) {
+        return ""
+      } else {
+        headerCharArray.append(mutable.DoubleLinkedList(char.toChar))
+      }
+
+      var rev = headerCharArray.reverseIterator
+
+      var current: Int = '\0'
+      var prev: Int = '\0'
+      var prevPrev: Int = '\0'
+      var prevPrevPrev: Int = '\0'
+      if (headerCharArray.size >= 4) {
+        val (current, prev, prevPrev, prevPrevPrev) = (rev.next, rev.next, rev.next, rev.next)
+        if (current == '\n' && prev == '\r' && prevPrev == '\n' && prevPrevPrev == '\r') {
+          break = true
+        }
+      }
+
+    }
+    headerCharArray = headerCharArray.drop(1)
+    val header =
+      if (headerCharArray.size != 0)
+        headerCharArray.mkString("")
+      else ""
+    header
   }
 }
 
@@ -106,23 +154,18 @@ object ServerConnectionDispatcher {
 }
 
 object Main extends App {
-  val system = ActorSystem()
-  val actors = new ListBuffer[ActorRef]
-  for (i <- 1 to Configuration.workers) {
-    actors += system.actorOf(ServerConnectionDispatcher(i))
-  }
 
-  View.startScalate()
 
-  val routerProps = Props.empty.withRouter(RoundRobinRouter(actors))
-  val actorRouter = system.actorOf(routerProps, "round-robin")
+  Booter.start()
+
   var serverSocket = new ServerSocket(Configuration.port)
-
   while(true){
     val clientSocket = serverSocket.accept;
-    actorRouter ! ClientSocketContainer(clientSocket)
+    clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
+
+    lib.actionRouters.connectionRouters.router ! ClientSocketContainer(clientSocket)
   }
 
-  system.shutdown()
+  lib.actionRouters.connectionRouters.system.shutdown()
 
 }
