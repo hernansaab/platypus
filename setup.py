@@ -9,6 +9,10 @@ home = expanduser("~")
 
 def start(args, logfile, errfile):
   setup_util.replace_text("platypus/src/resources/application.conf", "db.default.host=shopping", "db.default.host=" + args.database_host)
+  setup_util.replace_text("platypus/src/resources/application.conf", "db.default.user=root", "db.default.user=benchmarkdbuser")
+  setup_util.replace_text("platypus/src/resources/application.conf", "db.default.password=myroot", "db.default.password=benchmarkdbpass")
+
+
   try:
     subprocess.check_call("cd platypus && sbt runPlatypus", shell=True, stderr=errfile, stdout=logfile)
     return 0
