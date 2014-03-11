@@ -46,6 +46,7 @@ libraryDependencies += "org.apache.commons" % "commons-io" % "1.3.2"
 logLevel := Level.Warn
 
 lazy val runPlatypus = taskKey[Unit]("run in the background and kill previous job")
+
 lazy val stopPlatypus = taskKey[Unit]("run in the background and kill previous job")
 
 
