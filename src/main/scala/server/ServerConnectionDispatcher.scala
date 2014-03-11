@@ -209,7 +209,7 @@ object Main extends App {
     log.log(Level.INFO, "----------------------------waiting for connection-----------")
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
-    log.log(Level.INFO, "----------------------------routing for connection-----------")
+    log.log(Level.INFO, "----------------------------routing for connection-----------"+lib.actionRouters.connectionRouters.router.)
     lib.actionRouters.connectionRouters.router ! server.ClientSocketContainer(clientSocket)
     log.log(Level.INFO, "----------------------------connection routed-----------")
 

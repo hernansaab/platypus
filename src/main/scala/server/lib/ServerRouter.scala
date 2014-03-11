@@ -46,7 +46,7 @@ object ServerRouter {
         request.currentTransactionIndex.incrementAndGet()
         val durationr:Long = System.nanoTime() - request.x.startTime
 
-        println("Delay is from router ------"+ durationr/1000000)
+        log.log(Level.INFO, "Delay is from router ------"+ durationr/1000000)
 
         if (!request.x.isClosedTransaction && !_errorRoute(request)) {
           _route(request)
@@ -54,7 +54,7 @@ object ServerRouter {
 
 
         val duration:Long = System.nanoTime() - request.x.startTime
-        println("Delay is ------"+ duration/1000000)
+        log.log(Level.INFO,"Delay is ------"+ duration/1000000)
       } while (request.x.connectionType != "close" || request.x.isClosedTransaction == true)
 
     } catch {
