@@ -182,7 +182,7 @@ object Main extends App {
 
   }catch {
     case e:Throwable =>{
-      log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used.\n"+e.getStackTraceString+ e.get)
+      log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used.\n"+e.getStackTraceString+ e.getMessage)
       System.exit(0)
     }
   }
