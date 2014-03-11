@@ -8,12 +8,18 @@ import java.util.TimeZone
  * Created by hernansaab on 3/1/14.
  */
 object Common {
-  def json(size:Int):String =
+  def json(size:Int):String = {
+    val dt:DateTime = DateTime.now(DateTimeZone.forID("GMT"))
+    val fmt:DateTimeFormatter = DateTimeFormat.forPattern("E, dd MMM yyyy kk:mm:ss");
+    val date:String = fmt.print(dt)+ " GMT";
     f"""HTTP/1.1 200 Accepted
       |Content-type: application/json
       |Content-Length: ${size}
+      |Date: ${date}
+      |Server: Platypus
       |
       |""".stripMargin
+  }
 
   def response415:String =
     """HTTP/1.1 415 Unsupported Media Type
