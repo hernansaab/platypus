@@ -176,9 +176,9 @@ object Main extends App {
 
 
   lib.Booter.start()
-  var serverSocket = false
+  var serverSocket:ServerSocket = null
   try{
-    var serverSocket = new ServerSocket(Configuration.port)
+    serverSocket = new ServerSocket(Configuration.port)
 
   }catch {
     case e:Throwable =>{
