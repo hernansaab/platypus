@@ -186,6 +186,7 @@ object Main extends App {
     System.exit(1)
   }
   */
+
   var processName = ManagementFactory.getRuntimeMXBean().getName
 
   println("FROM SERVER: platypus is starting and process is "+ processName)
@@ -196,15 +197,14 @@ object Main extends App {
 
   lib.Booter.start()
   var serverSocket:ServerSocket = null
-  try{
+  if(server.isPortAvailable(Configuration.port)){
     serverSocket = new ServerSocket(Configuration.port)
 
-  }catch {
-    case e:Throwable =>{
-      log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used.\n"+e.getStackTraceString+ e.getMessage)
-      System.exit(0)
-    }
+  }else {
+      log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used.\n")
+
   }
+
   while(true){
     log.log(Level.INFO, "----------------------------waiting for connection-----------")
     val clientSocket = serverSocket.accept;

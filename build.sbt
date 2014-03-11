@@ -50,6 +50,7 @@ lazy val runPlatypus = taskKey[Unit]("run in the background and kill previous jo
 lazy val stopPlatypus = taskKey[Unit]("stop in the background and kill previous job")
 
 
+
 runPlatypus := {
   println("----starting the platypus-----")
   if(new java.io.File("PID").exists){
@@ -63,7 +64,7 @@ runPlatypus := {
   }
   // val p:java.lang.Process = java.lang.Runtime.getRuntime().exec("sbt run >>file.txt 2>&1");
   //val p:java.lang.Process = java.lang.Runtime.getRuntime().exec(Array("bash", "sbt run >>/home/solr/benchmarks/platypus/log.txt 2>&1" ));
-  val builder:java.lang.ProcessBuilder = new java.lang.ProcessBuilder("bash", "sbt run");
+  val builder:java.lang.ProcessBuilder = new java.lang.ProcessBuilder("sudo", "sbt", "run");
   builder.redirectOutput(new File("log.log"));
   builder.redirectError(new File("log.log"));
   builder.start();
