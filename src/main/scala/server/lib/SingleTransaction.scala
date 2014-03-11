@@ -32,7 +32,6 @@ class SingleTransaction(_header:String) {
         else list.head.toInt
       size
     }
-
     def parseGetCommand(header: String): (String, String, String, String) = {
       val FullCommand = "(?s)(GET|POST|PUT|DELETE|HEAD)\\s+([^\\?\\s]+)((\\?)?(\\S+)?)\\s+(\\S+).+".r
       try {
@@ -44,7 +43,6 @@ class SingleTransaction(_header:String) {
         }
       }
     }
-
     def parseContentType(header: String): String = {
       val pattern = "Content-Type: (\\d+)".r
       var list = pattern.findAllIn(header).matchData.map(m => m.group(1)).toList
@@ -53,7 +51,6 @@ class SingleTransaction(_header:String) {
         else list.head
       contentType
     }
-
     def parseContentEncoding(header: String): String = {
       val pattern = "Content-Encoding:\\s(.+)".r
       var list = pattern.findAllIn(header).matchData.map(m => m.group(1)).toList
@@ -62,7 +59,6 @@ class SingleTransaction(_header:String) {
         else list.head
       value
     }
-
     def parseConnectionType(header: String): String = {
       val pattern = "Connection:\\s(.+)".r
       var list = pattern.findAllIn(header).matchData.map(m => m.group(1)).toList

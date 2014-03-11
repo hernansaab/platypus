@@ -2,3 +2,7 @@ target/*
 !target/.gitkeep
 .idea
 actorTest.iml
+project
+PID
+.name
+nohup.out

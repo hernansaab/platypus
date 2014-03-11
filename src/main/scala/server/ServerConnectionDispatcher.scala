@@ -17,6 +17,9 @@ import scala.collection.mutable
 import org.fusesource.scalate._
 import org.fusesource.scalate.{TemplateEngine, Binding, RenderContext}
 import java.io.File
+import java.util.logging.{Level, Logger}
+import java.lang.management.ManagementFactory
+import scala.reflect.io.File
 
 /**
  * Created by hernansaab on 2/26/14.
@@ -154,6 +157,15 @@ object ServerConnectionDispatcher {
 }
 
 object Main extends App {
+  private val log = Logger.getLogger(getClass.toString)
+
+  if(!server.isPortAvailable(Configuration.port)){
+    log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used")
+    System.exit(1)
+  }
+  var processName = ManagementFactory.getRuntimeMXBean().getName
+  println("process id ----"+ManagementFactory.getRuntimeMXBean().getName().split("@")(0))
+  scala.reflect.io.File("PID").writeAll(ManagementFactory.getRuntimeMXBean().getName().split("@")(0))
 
 
   Booter.start()

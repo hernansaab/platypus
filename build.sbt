@@ -1,3 +1,5 @@
+import java.io.{InputStreamReader, BufferedReader}
+
 name := "actorTest"
 
 version := "1.0"
@@ -40,6 +42,39 @@ libraryDependencies += "org.specs2" %% "specs2" % "2.1.1"
 
 libraryDependencies += "org.apache.commons" % "commons-io" % "1.3.2"
 
+
 logLevel := Level.Warn
+
+lazy val runPlatypus = taskKey[Unit]("run in the background and kill previous job")
+lazy val stopPlatypus = taskKey[Unit]("run in the background and kill previous job")
+
+
+runPlatypus := {
+  println("----starting the platypus-----")
+  if(new java.io.File("PID").exists){
+    val PID = scala.io.Source.fromFile("PID").mkString.stripMargin.stripLineEnd
+    try{
+      println(f"killing process ${PID}")
+      f"kill -9 ${PID}".!!
+    }catch{
+      case e:Throwable => println(f"process ${PID} is no longer running")
+    }
+  }
+   val p:java.lang.Process = java.lang.Runtime.getRuntime().exec("sbt run");
+}
+
+
+stopPlatypus := {
+  println("----stopping the platypus-----")
+  if(new java.io.File("PID").exists){
+    val PID = scala.io.Source.fromFile("PID").mkString.stripMargin.stripLineEnd
+    try{
+      println(f"killing process ${PID}")
+      f"kill -9 ${PID}".!!
+    }catch{
+      case e:Throwable => println(f"process ${PID} is no longer running")
+    }
+  }
+}
 
 //∂logLevel := Level.Debug

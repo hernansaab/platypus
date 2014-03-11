@@ -6,20 +6,14 @@ import server.lib.Helpers._
 import application.mvc._
 import application.mvc
 import net.liftweb.json._
-
 /**
  * Created by hernansaab on 2/27/14.
  */
 object ApplicationRouter {
-
   def runViewController(r: HttpRequest):Boolean = {
-    println("path------"+r.x.path+"------")
     r.x.path match {
       case "" | "/" | r"/index"=> {
-        println("xxxxxxxx delay----"+(System.nanoTime() - r.x.startTime)/1000000)
         val x = controllers.DefaultController.index(r.x.command)
-        println("xxxxxxxx delay after----"+(System.nanoTime() - r.x.startTime)/1000000)
-
         r@<<- x //controller renders view directly through a ssp file set in the controller/action DefaultController/index
 
       }
