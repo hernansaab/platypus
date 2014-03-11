@@ -37,12 +37,30 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
       def cleanup() = {
         try{
           out.flush()
+
+        }catch{
+          case e: Exception => log.warning(("Connection possibly timed out before we close it--1-" + e.getMessage).+("\n---") + e.getStackTrace)
+        }
+
+        try{
           clientSocket.close()
+
+        }catch{
+          case e: Exception => log.warning(("Connection possibly timed out before we close it--2-" + e.getMessage).+("\n---") + e.getStackTrace)
+        }
+        try{
           in.close()
+
+        }catch{
+          case e: Exception => log.warning(("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
+        }
+        try{
           out.close()
         }catch{
-          case e: Exception => log.warning(("Connection possibly timed out before we close it---" + e.getMessage).+("\n---") + e.getStackTrace)
+          case e: Exception => log.warning(("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
         }
+
+
 
       }
 
