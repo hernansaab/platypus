@@ -47,7 +47,7 @@ logLevel := Level.Warn
 
 lazy val runPlatypus = taskKey[Unit]("run in the background and kill previous job")
 
-lazy val stopPlatypus = taskKey[Unit]("kill current job job")
+lazy val stopPlatypus = taskKey[Unit]("stop in the background and kill previous job")
 
 
 runPlatypus := {
