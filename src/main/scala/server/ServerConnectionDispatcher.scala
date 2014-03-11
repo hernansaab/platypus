@@ -158,15 +158,15 @@ object ServerConnectionDispatcher {
 
 object Main extends App {
 
-  println("FROM SERVER: platypus is starting")
   private val log = Logger.getLogger(getClass.toString)
   println("FROM SERVER: platypus is starting2")
-
+/*
   if(!server.isPortAvailable(Configuration.port)){
     println("FROM SERVER: platypus is starting3")
     log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used")
     System.exit(1)
   }
+  */
   var processName = ManagementFactory.getRuntimeMXBean().getName
 
   println("FROM SERVER: platypus is starting and process is "+ processName)
@@ -176,8 +176,16 @@ object Main extends App {
 
 
   lib.Booter.start()
+  var serverSocket = false
+  try{
+    var serverSocket = new ServerSocket(Configuration.port)
 
-  var serverSocket = new ServerSocket(Configuration.port)
+  }catch {
+    case e:Throwable =>{
+      log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used.\n"+e.getStackTraceString)
+      System.exit(3)
+    }
+  }
   while(true){
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
