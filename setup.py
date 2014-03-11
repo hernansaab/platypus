@@ -25,7 +25,7 @@ def start(args, logfile, errfile):
 def stop(logfile, errfile):
   try:
     os.chdir("/home/solr/benchmarks/platypus")
-    subprocess.check_call("cd platypus && sbt stopPlatypus", shell=True, stderr=errfile, stdout=logfile)
+    subprocess.check_call("sbt stopPlatypus", shell=True, stderr=errfile, stdout=logfile)
     return 0
   except subprocess.CalledProcessError:
     return 1
