@@ -43,7 +43,7 @@ libraryDependencies += "org.specs2" %% "specs2" % "2.1.1"
 libraryDependencies += "org.apache.commons" % "commons-io" % "1.3.2"
 
 
-logLevel := Level.Warn
+logLevel := Level.Info
 
 lazy val runPlatypus = taskKey[Unit]("run in the background and kill previous job")
 
@@ -61,7 +61,12 @@ runPlatypus := {
       case e:Throwable => println(f"process ${PID} is no longer running")
     }
   }
-   val p:java.lang.Process = java.lang.Runtime.getRuntime().exec("sbt run");
+  // val p:java.lang.Process = java.lang.Runtime.getRuntime().exec("sbt run >>file.txt 2>&1");
+  //val p:java.lang.Process = java.lang.Runtime.getRuntime().exec(Array("bash", "sbt run >>/home/solr/benchmarks/platypus/log.txt 2>&1" ));
+  val builder:java.lang.ProcessBuilder = new java.lang.ProcessBuilder("bash", "sbt run");
+  builder.redirectOutput(new File("log.log"));
+  builder.redirectError(new File("log.log"));
+  builder.start();
 }
 
 

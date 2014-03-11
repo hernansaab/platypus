@@ -44,6 +44,7 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
 
         try{
           clientSocket.close()
+          clientSocket.shutdownInput()
 
         }catch{
           case e: Exception => log.warning(("Connection possibly timed out before we close it--2-" + e.getMessage).+("\n---") + e.getStackTrace)
@@ -205,10 +206,13 @@ object Main extends App {
     }
   }
   while(true){
+    log.log(Level.INFO, "----------------------------waiting for connection-----------")
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
-
+    log.log(Level.INFO, "----------------------------routing for connection-----------")
     lib.actionRouters.connectionRouters.router ! server.ClientSocketContainer(clientSocket)
+    log.log(Level.INFO, "----------------------------connection routed-----------")
+
   }
 
   lib.actionRouters.connectionRouters.system.shutdown()
