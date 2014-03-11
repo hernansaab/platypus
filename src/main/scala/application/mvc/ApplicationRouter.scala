@@ -37,7 +37,7 @@ object ApplicationRouter {
 
         }
       }
-      case r"^.*what/json$$" => r@<<- views.Json.<--(controllers.ShoppingController.response4("blah"))
+      case r"^.*/platypus/benchmark/json$$" => r@<<- views.Json.<--(controllers.ShoppingController.response4("blah"))
       case r"^.*/json$$" => r@<<- views.Json.<--(controllers.ShoppingController.unsupported("blah"))
 
 

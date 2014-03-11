@@ -8,7 +8,7 @@
       "query_url": "/platypus/benchmark/db/",
       "fortune_url": "/platypus/benchmark/fortune-hiccup",
       "plaintext_url": "/platypus/benchmark/plaintext",
-      "port": 8080,
+      "port": 80,
       "approach": "Realistic",
       "classification": "Fullstack",
       "database": "MySQL",

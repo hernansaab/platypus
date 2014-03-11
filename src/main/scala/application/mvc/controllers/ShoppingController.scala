@@ -27,7 +27,8 @@ object ShoppingController extends AppController{
   def response4(arg:String): JValue ={
 
     (
-      arg ->  ("status" -> "DOUBT") ~ ("errors" -> List("I dont know if i should support this command command."))
+      arg ->{"message" ->"Hello, World!"}
+      //arg ->  ("status" -> "DOUBT") ~ ("errors" -> List("I dont know if i should support this command command."))
       )
   }
 }
