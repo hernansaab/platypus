@@ -1,11 +1,13 @@
+package  server
 import java.io.IOException
 import java.net.{DatagramSocket, ServerSocket, Socket}
-import server.lib.HttpRequest
+import lib._
+
 
 /**
  * Created by hernansaab on 3/8/14.
  */
-package object server {
+object server {
   case class ClientSocketContainer(sock: Socket)
   case class TransactionConnectionContainer(request: HttpRequest)
 

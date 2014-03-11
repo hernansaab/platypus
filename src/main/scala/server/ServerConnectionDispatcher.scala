@@ -6,7 +6,7 @@ import java.io._
 import java.net.ServerSocket
 import java.net.Socket
 import scala.collection.mutable.ListBuffer
-import server.lib._
+import lib._
 
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
@@ -31,7 +31,7 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
 
 
 
-    case ClientSocketContainer(clientSocket) => {
+    case server.ClientSocketContainer(clientSocket) => {
       val out = new PrintWriter(clientSocket.getOutputStream, true)
       val in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
       def cleanup() = {
@@ -49,7 +49,7 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
       runConnection(out, cleanup, in)
     }
 
-    case TransactionConnectionContainer(request) => {
+    case server.TransactionConnectionContainer(request) => {
       ServerRouter.route(request)
     }
 
@@ -63,7 +63,7 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
 
 
       val request = RequestConnectionFactory.generateRequestConnection(in, out, cleanup)
-      lib.actionRouters.connectionRouters.router ! TransactionConnectionContainer(request)
+      lib.actionRouters.connectionRouters.router ! server.TransactionConnectionContainer(request)
       var header:String = ""
       var transaction:SingleTransaction = null
       do{
@@ -175,14 +175,14 @@ object Main extends App {
   scala.reflect.io.File("PID").writeAll(ManagementFactory.getRuntimeMXBean().getName().split("@")(0))
 
 
-  Booter.start()
+  lib.Booter.start()
 
   var serverSocket = new ServerSocket(Configuration.port)
   while(true){
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
 
-    lib.actionRouters.connectionRouters.router ! ClientSocketContainer(clientSocket)
+    lib.actionRouters.connectionRouters.router ! server.ClientSocketContainer(clientSocket)
   }
 
   lib.actionRouters.connectionRouters.system.shutdown()
