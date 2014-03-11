@@ -1,0 +1,27 @@
+{
+  "framework": "platypus",
+  "tests": [{
+    "default": {
+      "setup_file": "setup",
+      "json_url": "/platypus/benchmark/json",
+      "db_url": "/platypus/benchmark/db/1",
+      "query_url": "/platypus/benchmark/db/",
+      "fortune_url": "/platypus/benchmark/fortune-hiccup",
+      "plaintext_url": "/platypus/benchmark/plaintext",
+      "port": 8080,
+      "approach": "Realistic",
+      "classification": "Fullstack",
+      "database": "MySQL",
+      "framework": "The Platypus",
+      "language": "Scala",
+      "orm": "Full",
+      "platform": "The Platypus",
+      "webserver": "The Platypus",
+      "os": "Linux",
+      "database_os": "Linux",
+      "display_name": "the platypus",
+      "notes": "",
+      "versus": "servlet"
+    }
+  }]
+}
