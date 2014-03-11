@@ -157,13 +157,20 @@ object ServerConnectionDispatcher {
 }
 
 object Main extends App {
+
+  println("FROM SERVER: platypus is starting")
   private val log = Logger.getLogger(getClass.toString)
+  println("FROM SERVER: platypus is starting2")
 
   if(!server.isPortAvailable(Configuration.port)){
+    println("FROM SERVER: platypus is starting3")
     log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used")
     System.exit(1)
   }
   var processName = ManagementFactory.getRuntimeMXBean().getName
+
+  println("FROM SERVER: platypus is starting and process is "+ processName)
+
   println("process id ----"+ManagementFactory.getRuntimeMXBean().getName().split("@")(0))
   scala.reflect.io.File("PID").writeAll(ManagementFactory.getRuntimeMXBean().getName().split("@")(0))
 
