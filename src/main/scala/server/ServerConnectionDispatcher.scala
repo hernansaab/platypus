@@ -29,8 +29,6 @@ import scala.reflect.io.File
 class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLogging {
   def receive: Actor.Receive = {
 
-
-
     case server.ClientSocketContainer(clientSocket) => {
       val out = new PrintWriter(clientSocket.getOutputStream, true)
       val in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
@@ -44,14 +42,12 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
 
         try{
           clientSocket.close()
-          clientSocket.shutdownInput()
 
         }catch{
           case e: Exception => log.warning(("Connection possibly timed out before we close it--2-" + e.getMessage).+("\n---") + e.getStackTrace)
         }
         try{
           in.close()
-
         }catch{
           case e: Exception => log.warning(("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
         }

@@ -55,7 +55,7 @@ object ServerRouter {
 
         val duration:Long = System.nanoTime() - request.x.startTime
         log.log(Level.INFO,"Delay is ------"+ duration/1000000)
-      } while (request.x.connectionType != "close" || request.x.isClosedTransaction == true)
+      } while (request.x.connectionType != "close" && request.x.isClosedTransaction != true)
 
     } catch {
       case e: Exception => {
