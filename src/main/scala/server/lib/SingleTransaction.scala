@@ -17,7 +17,7 @@ class SingleTransaction(_header:String) {
   var body:String = null
   var startTime = System.nanoTime()
   val isClosedTransaction:Boolean =
-    if(_header == null) true
+    if(_header == null || _header == "") true
     else false
 
   def setBody(_body:String){
