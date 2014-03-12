@@ -77,11 +77,11 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
 
   def runConnection(out: Writer, cleanup:()=>Unit, in: BufferedReader) {
 
-
+    var request:HttpRequest = null
     try {//work on timeout live
 
 
-      val request = RequestConnectionFactory.generateRequestConnection(in, out, cleanup)
+      request = RequestConnectionFactory.generateRequestConnection(in, out, cleanup)
       lib.actionRouters.connectionRouters.router ! server.TransactionConnectionContainer(request)
       var header:String = ""
       var transaction:SingleTransaction = null
@@ -107,6 +107,9 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
     }
     catch {
       case e: IOException => log.debug(("Connection possibly closed by client---" + e.getMessage).+("\n---"))
+        if(request != null)
+          request.addTransaction(new SingleTransaction(null))
+        cleanup()
     }
 
   }
