@@ -62,7 +62,7 @@ object ServerRouter {
         log.log(Level.WARNING, "ROUTE WARNING: Connection possibly closed by client\n" + e.getStackTraceString)
       }
     }
-
+    request.cleanup
     return true
   }
 
