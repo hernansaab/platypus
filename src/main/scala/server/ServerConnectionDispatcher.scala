@@ -106,7 +106,7 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
 
     }
     catch {
-      case e: IOException => log.debug(("Connection possibly closed by client---" + e.getMessage).+("\n---"))
+      case e: Throwable => log.debug(("Connection possibly closed by client---" + e.getMessage).+("\n---"))
         if(request != null)
           request.addTransaction(new SingleTransaction(null))
         cleanup()
@@ -212,7 +212,6 @@ object Main extends App {
     log.log(Level.INFO, "----------------------------waiting for connection-----------")
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
-    log.log(Level.INFO, "----------------------------routing for connection-----------"+lib.actionRouters.connectionRouters.router.)
     lib.actionRouters.connectionRouters.router ! server.ClientSocketContainer(clientSocket)
     log.log(Level.INFO, "----------------------------connection routed-----------")
 
