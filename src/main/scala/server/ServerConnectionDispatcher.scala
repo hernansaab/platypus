@@ -56,9 +56,6 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
         }catch{
           case e: Exception => log.warning(("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
         }
-
-
-
       }
 
       runConnection(out, cleanup, in)
@@ -92,6 +89,8 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
           case e:Throwable => {
             header = ""
             transaction = new SingleTransaction(null)
+            log.debug("1:Adding1 non connection transaction to request "+request.startTime)
+
             cleanup()
           }
 
@@ -103,8 +102,12 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
     }
     catch {
       case e: Throwable => log.debug(("Connection possibly closed by client---" + e.getMessage).+("\n---"))
-        if(request != null)
+        if(request != null){
           request.addTransaction(new SingleTransaction(null))
+          log.debug("2:Adding non connection transaction to request "+request.startTime)
+        }
+
+
         cleanup()
     }
 

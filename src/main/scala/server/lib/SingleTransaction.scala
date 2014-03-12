@@ -5,9 +5,7 @@ package server.lib
  */
 class SingleTransaction(_header:String) {
 
-  val isClosedTransaction:Boolean =
-    if(_header == null) true
-    else false
+
 
   val header = if(_header == null) "" else _header
 
@@ -18,6 +16,9 @@ class SingleTransaction(_header:String) {
   val connectionType = Utils.parseConnectionType(header)
   var body:String = null
   var startTime = System.nanoTime()
+  val isClosedTransaction:Boolean =
+    if(_header == null) true
+    else false
 
   def setBody(_body:String){
     body = _body

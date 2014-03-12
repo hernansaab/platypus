@@ -37,16 +37,19 @@ object ServerRouter {
 
     try {
       do {
+        log.log(Level.INFO, "\n\nWAITING: connection router ------"+request.startTime + "======"+request.transactionCount.intValue()+ "------------->" +request.currentTransactionIndex.intValue() )
 
-        while (request.transactionCount.intValue() <= (request.currentTransactionIndex.intValue() + 1)) {
+        while (!(request.transactionCount.intValue() > (request.currentTransactionIndex.intValue()+1))) {
           Thread.sleep(0,1000)
         }
+        log.log(Level.INFO, "\n\nWAITING: connection routerxxxxx ------"+request.startTime + "======"+request.transactionCount.intValue()+ "------------->" +request.currentTransactionIndex.intValue() )
 
+        log.log(Level.INFO, "WAITING OVER: connection router ------"+request.startTime)
 
         request.currentTransactionIndex.incrementAndGet()
         val durationr:Long = System.nanoTime() - request.x.startTime
 
-        log.log(Level.INFO, "Delay is from router ------"+ durationr/1000000)
+        log.log(Level.INFO, "Delay is from router ------"+ durationr/1000000+"-----"+request.startTime)
 
         if (!request.x.isClosedTransaction && !_errorRoute(request)) {
           _route(request)
@@ -54,7 +57,7 @@ object ServerRouter {
 
 
         val duration:Long = System.nanoTime() - request.x.startTime
-        log.log(Level.INFO,"Delay is ------"+ duration/1000000)
+        log.log(Level.INFO,"Delay is ------"+ duration/1000000+"---"+request.startTime+ "----connectiontype---"+ request.x.connectionType+"\n")
       } while (request.x.connectionType != "close" && request.x.isClosedTransaction != true)
 
     } catch {
@@ -62,7 +65,9 @@ object ServerRouter {
         log.log(Level.WARNING, "ROUTE WARNING: Connection possibly closed by client\n" + e.getStackTraceString)
       }
     }
-    request.cleanup
+    log.log(Level.INFO, "----------OUT OF WAITING!! OVER: connection router -----CONNECTION OUT OF LOOP AND NO LONGER WAITING-"+request.startTime+"")
+
+    request.cleanup()
     return true
   }
 
