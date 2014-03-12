@@ -21,11 +21,11 @@ object Common {
       |""".stripMargin
   }
 
-  def response415:String =
+  def response415:String ={
     """HTTP/1.1 415 Unsupported Media Type
       |
       |""".stripMargin
-
+  }
   def response200HtmlNoCookies(size:Int): String =
     response200Html(size)
 

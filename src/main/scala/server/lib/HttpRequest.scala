@@ -42,6 +42,7 @@ class HttpRequest(_in:BufferedReader, _out:Writer,_cleanup:()=>Unit) {
    */
   def @<<-(text:String):Boolean = {
     try{
+      log.log(Level.INFO, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^DEBUG STDOUT-----"+text)
       out.write(text);
       out.flush()
     }catch{

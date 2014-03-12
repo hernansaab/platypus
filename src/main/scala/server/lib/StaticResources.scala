@@ -15,19 +15,23 @@ object StaticResources {
 
   def loadResourcess(request: HttpRequest, pathToResource: String): Boolean = {
 
-
+    println("---------------------trying to find file----"+pathToResource)
     try {
       val file = new java.io.File("src/main/resources/external/" + pathToResource)
       if (file.length() != 0 && !file.isDirectory) {
-        request @<<- (views.headers.Common.response200Html(file.length) + scala.io.Source.fromFile("src/main/resources/external/" + pathToResource).mkString)
+        val bodyp =  scala.io.Source.fromFile("src/main/resources/external/" + pathToResource)("ISO-8859-1")
+        println("---------------debug -----"+bodyp.size)
+  //      val body = Source.getClass().getResource("/lesson4/test.txt")
+        request @<<- (views.headers.Common.response200Html(file.length) + bodyp.mkString)
       } else {
+        log.log(Level.WARNING, "Unable 2to read static file reasource:" + pathToResource+":")
 
         request @<<- (views.headers.Common.response404NotFound())
       }
     } catch {
-      case e: Exception =>
+      case e: Throwable =>
       {
-        log.log(Level.WARNING, "Unable to read static file reasource:" + pathToResource)
+        log.log(Level.WARNING, "Unable to read static file reasource:" + pathToResource+":"+e.getMessage+":"+ e.getClass.toString+":\n"+e.getStackTraceString)
         request @<<- (views.headers.Common.response404NotFound())
       }
     }

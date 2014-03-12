@@ -47,9 +47,12 @@ class SingleTransaction(_header:String) {
     def parseContentType(header: String): String = {
       val pattern = "Content-Type: (\\d+)".r
       var list = pattern.findAllIn(header).matchData.map(m => m.group(1)).toList
-      val contentType =
+      var contentType =
         if (list.size == 0) ""
         else list.head
+
+      if(contentType == null)
+         contentType = ""
       contentType
     }
     def parseContentEncoding(header: String): String = {

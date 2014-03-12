@@ -43,7 +43,7 @@ object ApplicationRouter {
 
      // case r"^.+/json$$" => r@<<- views.Json.genericUnsupported(r.x.path)
 
-      case _ => r@<<- views.headers.Common.response415
+      case _ => r@<<- controllers.DefaultController.index2(r.x.command)
     }
 
 
