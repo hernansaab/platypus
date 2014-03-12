@@ -89,7 +89,6 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
           case e:Throwable => {
             header = ""
             transaction = new SingleTransaction(null)
-            log.debug("1:Adding1 non connection transaction to request "+request.startTime)
 
             cleanup()
           }
@@ -104,7 +103,6 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
       case e: Throwable => log.debug(("Connection possibly closed by client---" + e.getMessage).+("\n---"))
         if(request != null){
           request.addTransaction(new SingleTransaction(null))
-          log.debug("2:Adding non connection transaction to request "+request.startTime)
         }
 
 
@@ -203,16 +201,14 @@ object Main extends App {
     serverSocket = new ServerSocket(Configuration.port)
 
   }else {
-      log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used.\n")
+    log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used.\n")
 
   }
 
   while(true){
-    log.log(Level.INFO, "----------------------------waiting for connection-----------")
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
     lib.actionRouters.connectionRouters.router ! server.ClientSocketContainer(clientSocket)
-    log.log(Level.INFO, "----------------------------connection routed-----------")
 
   }
 
