@@ -7,6 +7,7 @@ import application.mvc.ApplicationRouter
 import com.typesafe.config.ConfigFactory
 import server.{server, lib, Configuration}
 import java.util.logging.{Level, Logger}
+import akka.actor.ActorRef
 
 /**
  * Created by hernansaab on 2/27/14.
@@ -32,13 +33,17 @@ object ServerRouter {
     true
   }
 
-  def route(request: HttpRequest): Boolean = {
+  def route(request: HttpRequest, reroute:()=>Unit): Boolean = {
 
     try {
       do {
 
+        var stamp = System.currentTimeMillis()
         while (!(request.transactionCount.intValue() > (request.currentTransactionIndex.intValue() + 1))) {
-          Thread.sleep(0, 1000)
+          if(System.currentTimeMillis() - stamp > 300){
+            reroute()
+            return true
+          }
         }
 
 
@@ -51,7 +56,7 @@ object ServerRouter {
         val durationr: Long = System.nanoTime() - request.x.startTime
 
 
-        var error = _errorRoute(request)
+        val error = _errorRoute(request)
         if (!request.x.isClosedTransaction && !error) {
           _route(request)
           request.out.flush()
@@ -65,7 +70,7 @@ object ServerRouter {
 
     } catch {
       case e: Exception => {
-        log.log(Level.WARNING, "ROUTE WARNING: Connection possibly closed by client\n" + e.getStackTraceString)
+        log.log(Level.WARNING, "ROUTE WARNING: Connection possibly closed by client\n" + e.getStackTraceString+":"+e.getMessage)
       }
     }
 

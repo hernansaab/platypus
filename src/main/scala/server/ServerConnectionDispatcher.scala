@@ -20,13 +20,17 @@ import java.io.File
 import java.util.logging.{Level, Logger}
 import java.lang.management.ManagementFactory
 import scala.reflect.io.File
+import akka.dispatch.Dispatchers
+import scala.concurrent.duration._
 
 /**
  * Created by hernansaab on 2/26/14.
  */
 
 
-class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLogging {
+class ServerConnectionDispatcher() extends Actor with ActorLogging {
+  import context.dispatcher
+
   def receive: Actor.Receive = {
 
     case server.ClientSocketContainer(clientSocket) => {
@@ -61,11 +65,23 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
       runConnection(out, cleanup, in)
     }
 
+
     case server.TransactionConnectionContainer(request) => {
-      ServerRouter.route(request)
+      def reroute():Unit = {
+       // lib.actionRouters.connectionRouters.system.scheduler.scheduleOnce(2 milliseconds) {
+          try {
+            lib.actionRouters.connectionRouters.readConnectionRouter ! new server.TransactionConnectionContainer(request)
+
+          } catch {
+            case e: Throwable => log.debug(s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+          }
+    //    }
+
+      }
+      ServerRouter.route(request, reroute)
     }
 
-    case msg => log.debug(s"Message from  actor $actorNumber: $msg")
+    case msg => log.debug(s"Message from  actor : $msg")
   }
 
   def runConnection(out: Writer, cleanup:()=>Unit, in: BufferedReader) {
@@ -75,7 +91,7 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
 
 
       request = RequestConnectionFactory.generateRequestConnection(in, out, cleanup)
-      lib.actionRouters.connectionRouters.router ! server.TransactionConnectionContainer(request)
+      lib.actionRouters.connectionRouters.readConnectionRouter ! server.TransactionConnectionContainer(request)
       var header:String = ""
       var transaction:SingleTransaction = null
       do{
@@ -171,12 +187,10 @@ class ServerConnectionDispatcher(actorNumber: Int) extends Actor with ActorLoggi
   }
 }
 
-object ServerConnectionDispatcher {
-  def apply(param: Int): Props = Props(new ServerConnectionDispatcher(param))
-}
 
 object Main extends App {
-
+   val system:ActorSystem = ActorSystem.create();
+  //println("----------------------"+system.settings);
   private val log = Logger.getLogger(getClass.toString)
   println("FROM SERVER: platypus is starting2")
 /*
@@ -208,7 +222,7 @@ object Main extends App {
   while(true){
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
-    lib.actionRouters.connectionRouters.router ! server.ClientSocketContainer(clientSocket)
+    lib.actionRouters.connectionRouters.readConnectionRouter ! server.ClientSocketContainer(clientSocket)
 
   }
 

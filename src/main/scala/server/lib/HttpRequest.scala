@@ -12,17 +12,7 @@ import java.util.logging.{Level, Logger}
  * Created by hernansaab on 2/27/14.
  */
 class HttpRequest(_in:BufferedReader, _out:Writer,_cleanup:()=>Unit) {
- /* var body:String = "";
-  var header:String = ""
-  var path:String = ""
-  var command:String = ""
-  var argument:String = ""
-  var httpVersion: String = ""
-  var contentType: String = ""
-  var contentEncoding: String = ""
-  var postSize: Int=0
-  var connectionType: String = ""
-*/
+
  private val log = Logger.getLogger(getClass.toString)
 
   //try not to use these guys if you are developing an app within framework
@@ -34,12 +24,20 @@ class HttpRequest(_in:BufferedReader, _out:Writer,_cleanup:()=>Unit) {
   @volatile var currentTransactionIndex:AtomicInteger = new AtomicInteger(-1)
   @volatile var transactionCount:AtomicInteger = new AtomicInteger(0)
 
-  val transactions:mutable.ArrayBuffer[SingleTransaction] = new mutable.ArrayBuffer[SingleTransaction]
+  var transactions:mutable.ArrayBuffer[SingleTransaction] = new mutable.ArrayBuffer[SingleTransaction]
   /**
    * print a string to output connection and close it
    * @param text
    * @return status successfull
    */
+  def copy():HttpRequest = {
+    val r = new HttpRequest(in, out, cleanup)
+    r.transactions = transactions
+    r.currentTransactionIndex = currentTransactionIndex
+    r.transactionCount = transactionCount
+    r.startTime = startTime
+    r
+  }
   def @<<-(text:String):Boolean = {
     try{
       out.write(text);

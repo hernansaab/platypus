@@ -6,7 +6,7 @@ version := "1.0"
 
 resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.1.0"
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.0"
 
 libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.6"
 
