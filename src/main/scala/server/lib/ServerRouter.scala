@@ -44,6 +44,7 @@ object ServerRouter {
             reroute()
             return true
           }
+          Thread.sleep(1)
         }
 
 
