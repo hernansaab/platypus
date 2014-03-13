@@ -71,7 +71,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
        // lib.actionRouters.connectionRouters.system.scheduler.scheduleOnce(2 milliseconds) {
           try {
             lib.actionRouters.connectionRouters.readConnectionRouter ! new server.TransactionConnectionContainer(request)
-
+            Thread.sleep(1)
           } catch {
             case e: Throwable => log.debug(s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
           }
