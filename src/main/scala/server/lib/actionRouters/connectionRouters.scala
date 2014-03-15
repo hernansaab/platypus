@@ -8,5 +8,5 @@ import akka.actor.{ActorSystem, ActorRef}
 object connectionRouters {
   var system:ActorSystem = null
   var waitConnectionRouter:ActorRef = null
-  var writeConnectionRouter:ActorRef = null
+  var workerRouter:ActorRef = null
 }

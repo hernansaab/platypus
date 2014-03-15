@@ -8,8 +8,7 @@ import java.net.Socket
 import scala.collection.mutable.ListBuffer
 import lib._
 
-import net.liftweb.json._
-import net.liftweb.json.JsonDSL._
+
 
 
 import scala.collection.mutable._
@@ -86,8 +85,11 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       }
       val request = RequestConnectionFactory.generateRequestConnection(in, out, stream, cleanup)
 
-      listenConnection(request)
-      lib.actionRouters.connectionRouters.writeConnectionRouter ! server.TransactionConnectionContainerWriter(request)
+      var success = listenConnection(request)
+      if(success){
+        lib.actionRouters.connectionRouters.workerRouter ! server.TransactionConnectionContainerWriter(request)
+
+      }
     }
 
 
@@ -97,7 +99,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       lib.actionRouters.connectionRouters.system.scheduler.scheduleOnce(1 milliseconds) {
         try {
           if(success){
-            lib.actionRouters.connectionRouters.writeConnectionRouter ! new server.TransactionConnectionContainerWriter(request)
+            lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
           }
 
         } catch {
@@ -108,7 +110,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
   }
 
-  def listenConnection(request:HttpRequest){
+  def listenConnection(request:HttpRequest):Boolean = {
     try {
       while(!request.in.ready()){
         Thread.sleep(1)
@@ -119,10 +121,11 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           request.addTransaction(new SingleTransaction(null))
         }
         request.cleanup()
-      return
+      return false
     }
     println("going to write!!--------------------")
-    lib.actionRouters.connectionRouters.writeConnectionRouter ! server.TransactionConnectionContainerReader(request)
+    lib.actionRouters.connectionRouters.workerRouter ! server.TransactionConnectionContainerReader(request)
+    return true
   }
 
 

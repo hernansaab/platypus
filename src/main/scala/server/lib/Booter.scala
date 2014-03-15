@@ -3,10 +3,10 @@ package server.lib
 import org.fusesource.scalate.TemplateEngine
 import akka.actor.{Actor, Props, ActorRef, ActorSystem}
 import scala.collection.mutable.ListBuffer
-import server.{ServerConnectionDispatcher, Configuration}
+import server.{Configuration}
 import akka.routing.{FromConfig, RoundRobinRouter}
 import java.net.InetSocketAddress
-
+import server._
 /**
  * Created by hernansaab on 3/7/14.
  */
@@ -20,26 +20,6 @@ import akka.routing.RoundRobinRoutingLogic
 object Booter {
 
 
-  class Server extends Actor {
-
-    import Tcp._
-    import context.system
-
-    IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 0))
-
-    def receive = {
-      case b @ Bound(localAddress) =>
-      // do some logging or setup ...
-
-      case CommandFailed(_: Bind) => context stop self
-
-      case c @ Connected(remote, local) =>
-        val handler = context.actorOf(Props[ServerConnectionDispatcher])
-        val connection = sender()
-        connection ! Register(handler)
-    }
-
-  }
 
   def start():Boolean = {
 
@@ -58,8 +38,8 @@ object Booter {
   //  actionRouters.connectionRouters.readConnectionRouter = actionRouters.connectionRouters.system.actorOf(routerProps, "round-robin")
 
     //actionRouters.connectionRouters.readConnectionRouter = actionRouters.connectionRouters.system.actorOf((Props[ServerConnectionDispatcher]), "router1")
-    actionRouters.connectionRouters.waitConnectionRouter = actionRouters.connectionRouters.system.actorOf(RoundRobinPool(2000).props(Props[ServerConnectionDispatcher]), "router1")
-    actionRouters.connectionRouters.writeConnectionRouter = actionRouters.connectionRouters.system.actorOf(RoundRobinPool(50).props(Props[ServerConnectionDispatcher]), "router2")
+    actionRouters.connectionRouters.waitConnectionRouter = actionRouters.connectionRouters.system.actorOf(FromConfig.props(Props[ServerConnectionDispatcher]), "router1")
+    actionRouters.connectionRouters.workerRouter = actionRouters.connectionRouters.system.actorOf(FromConfig.props(Props[ServerConnectionDispatcher]), "router2")
 
    //   actionRouters.connectionRouters.readConnectionRouter = actors(0)
 
