@@ -11,6 +11,9 @@ object Helpers {
 
   //val handler:Handler = new FileHandler("test.log", Configuration.log_size, LOG_ROTATION_COUNT);
   val handler:Handler = new FileHandler("log.log", 5000000, 10);
+  handler.setFormatter(new java.util.logging.SimpleFormatter)
+
+  //handler.setEncoding()
   implicit class RegexContext(sc: StringContext) {
     def r = new Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
   }
