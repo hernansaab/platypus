@@ -96,9 +96,12 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
     case server.TransactionConnectionContainerWriter(request) => {
 
-      val success = ServerRouter.route(request)
+      val status = ServerRouter.route(request)
 
-      if(success){
+      if(status == 1){
+        Thread.sleep(1)
+      }
+      if(status >= 0){
           try {
             lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
 
@@ -113,11 +116,10 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   def listenConnection(request:HttpRequest):Boolean = {
     try {
       if(!request.in.ready()){
+        Thread.sleep(2)
         lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ConnectionReadyWaiter(request)
         return true
       }
-      request.in.mark(4000)
-      request.in.reset()
     }catch {
       case e: Throwable => logger.log(Level.WARNING, ("Initial reading Connection possibly closed by client---" + e.getMessage) + ":"+ e.getStackTraceString + ("\n---"))
         if (request != null) {

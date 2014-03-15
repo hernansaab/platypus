@@ -33,19 +33,27 @@ object ServerRouter {
     true
   }
 
-  def route(request: HttpRequest): Boolean = {
+
+  /**
+   *
+   * @param request
+   * @return Int if 1 transaction count is 0 and its open connection
+   *         if 0 connection closed
+   *         if 2 connection open and transaction occurred
+   */
+  def route(request: HttpRequest): Int = {
 
     try {
 
 
       if (!(request.transactionCount.intValue() > (request.currentTransactionIndex.intValue() + 1))) {
-        return true
+        return 1
       }
       request.currentTransactionIndex.incrementAndGet()
 
 
       if (request.x.isClosedTransaction) {
-        return true //break loop is it is closed
+        return 0 //break loop is it is closed
       }
 
 
@@ -63,17 +71,17 @@ object ServerRouter {
       val duration: Long = System.nanoTime() - request.x.startTime
 
       if(!(request.x.connectionType != "close" && request.x.isClosedTransaction != true)){
-        return false
+        return 2
       }
 
     } catch {
       case e: Throwable => {
         log.log(Level.WARNING, "ROUTE WARNING: Connection possibly closed by client\n" + e.getStackTraceString+":"+e.getMessage)
-        return false
+        return 0
       }
     }
    // request.cleanup()
-    return true
+    return 0
   }
 
   def _errorRoute(request: HttpRequest): Boolean = {
