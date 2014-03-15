@@ -34,6 +34,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
   val logger: java.util.logging.Logger = Helpers.logger(self.getClass.toString)
 
+  logger.log(Level.INFO, "constructing stuff")
   def receive: Actor.Receive = {
 
     case server.TransactionConnectionContainerReader(request) => {
