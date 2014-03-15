@@ -99,7 +99,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       val success = ServerRouter.route(request)
 
       if(success){
-        lib.actionRouters.connectionRouters.system.scheduler.scheduleOnce(1 milliseconds) {
           try {
             lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
 
@@ -107,7 +106,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             case e: Throwable => logger.log(Level.WARNING, s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
           }
         }
-      }
     }
 
   }
