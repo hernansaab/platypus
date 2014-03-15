@@ -1,7 +1,7 @@
 package server.lib
 
 import scala.util.matching.Regex
-import java.io.{Writer, PrintWriter, BufferedReader}
+import java.io._
 import scala.collection.mutable
 import java.util.concurrent.atomic.AtomicInteger
 import org.joda.time.{LocalDate, DateTime}
@@ -11,27 +11,27 @@ import java.util.logging.{Level, Logger}
 /**
  * Created by hernansaab on 2/27/14.
  */
-class HttpRequest(_in:BufferedReader, _out:Writer,_cleanup:()=>Unit) {
+class HttpRequest(_in:BufferedReader, _out:Writer, _inputStream: InputStreamReader,_cleanup:()=>Unit) {
 
  private val log = Logger.getLogger(getClass.toString)
 
-  //try not to use these guys if you are developing an app within framework
+  var firstCharReady = false
   val in:BufferedReader= _in
   val out:Writer = _out
   val cleanup:() => Unit = _cleanup
   var startTime = System.nanoTime()
-
+  val inputStream: InputStreamReader = _inputStream
   @volatile var currentTransactionIndex:AtomicInteger = new AtomicInteger(-1)
   @volatile var transactionCount:AtomicInteger = new AtomicInteger(0)
 
-  var transactions:mutable.ArrayBuffer[SingleTransaction] = new mutable.ArrayBuffer[SingleTransaction]
+  @volatile var transactions:mutable.ArrayBuffer[SingleTransaction] = new mutable.ArrayBuffer[SingleTransaction]
   /**
    * print a string to output connection and close it
    * @param text
    * @return status successfull
    */
   def copy():HttpRequest = {
-    val r = new HttpRequest(in, out, cleanup)
+    val r = new HttpRequest(in, out, inputStream, cleanup)
     r.transactions = transactions
     r.currentTransactionIndex = currentTransactionIndex
     r.transactionCount = transactionCount

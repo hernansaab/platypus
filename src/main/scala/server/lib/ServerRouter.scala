@@ -33,49 +33,46 @@ object ServerRouter {
     true
   }
 
-  def route(request: HttpRequest, reroute:()=>Unit): Boolean = {
+  def route(request: HttpRequest): Boolean = {
 
     try {
-      do {
-
-        var stamp = System.currentTimeMillis()
-        while (!(request.transactionCount.intValue() > (request.currentTransactionIndex.intValue() + 1))) {
-          if(System.currentTimeMillis() - stamp > 300){
-            reroute()
-            return true
-          }
-          Thread.sleep(1)
-        }
 
 
-        request.currentTransactionIndex.incrementAndGet()
+      if (!(request.transactionCount.intValue() > (request.currentTransactionIndex.intValue() + 1))) {
+        return true
+      }
+      request.currentTransactionIndex.incrementAndGet()
 
 
-        if(request.x.isClosedTransaction){
-          return true //break loop is it is closed
-        }
-        val durationr: Long = System.nanoTime() - request.x.startTime
+      if (request.x.isClosedTransaction) {
+        return true //break loop is it is closed
+      }
 
 
-        val error = _errorRoute(request)
-        if (!request.x.isClosedTransaction && !error) {
-          _route(request)
-          request.out.flush()
-        }else if(error){
-          request.out.flush()
-        }
+      val error = _errorRoute(request)
+
+      if (!request.x.isClosedTransaction && !error) {
+        _route(request)
+        request.out.flush()
+      } else if (error) {
+
+        request.out.flush()
+      }
 
 
-        val duration: Long = System.nanoTime() - request.x.startTime
-      } while (request.x.connectionType != "close" && request.x.isClosedTransaction != true)
+      val duration: Long = System.nanoTime() - request.x.startTime
+
+      if(!(request.x.connectionType != "close" && request.x.isClosedTransaction != true)){
+        return false
+      }
 
     } catch {
-      case e: Exception => {
+      case e: Throwable => {
         log.log(Level.WARNING, "ROUTE WARNING: Connection possibly closed by client\n" + e.getStackTraceString+":"+e.getMessage)
+        return false
       }
     }
-
-    request.cleanup()
+   // request.cleanup()
     return true
   }
 

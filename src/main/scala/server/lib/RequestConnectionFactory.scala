@@ -1,7 +1,7 @@
 package server.lib
 
 import scala.util.matching.Regex
-import java.io.{Writer, PrintWriter, BufferedReader}
+import java.io._
 
 /**
  * Created by hernansaab on 2/27/14.
@@ -9,8 +9,8 @@ import java.io.{Writer, PrintWriter, BufferedReader}
 object RequestConnectionFactory {
 
 
-  def generateRequestConnection(in:BufferedReader, out:Writer, cleanup:() => Unit): HttpRequest = {
-    val request = new HttpRequest(in, out, cleanup)
+  def generateRequestConnection(in:BufferedReader, out:Writer, stream:InputStreamReader,  cleanup:() => Unit): HttpRequest = {
+    val request = new HttpRequest(in, out, stream, cleanup)
    /* val(command, path, argument, httpVersion) = Utils.parseGetCommand(header)
     request.command = command
     request.path = path

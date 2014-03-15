@@ -8,9 +8,10 @@ import lib._
  * Created by hernansaab on 3/8/14.
  */
 object server {
-  case class ClientSocketContainer(sock: Socket)
-  case class TransactionConnectionContainer(request: HttpRequest)
-
+  case class ClientSocketContainer(sock: Socket, id:Int)
+  case class TransactionConnectionContainerWriter(request: HttpRequest)
+  case class TransactionConnectionContainerReader(request: HttpRequest)
+  case class ConnectionReadyWaiter(request: HttpRequest)
 
 
   def isPortAvailable(port: Int): Boolean = {

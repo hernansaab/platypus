@@ -22,6 +22,7 @@ import java.lang.management.ManagementFactory
 import scala.reflect.io.File
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
+import java.util.concurrent.TimeUnit
 
 /**
  * Created by hernansaab on 2/26/14.
@@ -29,105 +30,144 @@ import scala.concurrent.duration._
 
 
 class ServerConnectionDispatcher() extends Actor with ActorLogging {
+
   import context.dispatcher
+
+  val logger: java.util.logging.Logger = Helpers.logger(self.getClass.toString)
 
   def receive: Actor.Receive = {
 
-    case server.ClientSocketContainer(clientSocket) => {
+    case server.TransactionConnectionContainerReader(request) => {
+      try {
+        readRequest(request)
+      }
+      catch {
+        case e: Throwable => logger.log(Level.WARNING, ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
+          if (request != null) {
+            request.addTransaction(new SingleTransaction(null))
+          }
+          request.cleanup()
+      }
+    }
+
+    case server.ConnectionReadyWaiter(request) =>{
+      listenConnection(request)
+    }
+    case server.ClientSocketContainer(clientSocket, id) => {
+
       val out = new PrintWriter(clientSocket.getOutputStream, true)
+      val stream = new InputStreamReader(clientSocket.getInputStream)
       val in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
       def cleanup() = {
-        try{
+        try {
           out.flush()
 
-        }catch{
-          case e: Exception => log.warning(("Connection possibly timed out before we close it--1-" + e.getMessage).+("\n---") + e.getStackTrace)
+        } catch {
+          case e: Exception => logger.log(Level.WARNING, "Connection possibly timed out before we close it--1-" + e.getMessage + ("\n---") + e.getStackTrace)
         }
 
-        try{
+
+        try {
+          in.close()
+        } catch {
+          case e: Exception => logger.log(Level.WARNING, ("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
+        }
+        try {
+          out.close()
+        } catch {
+          case e: Exception => logger.log(Level.WARNING, ("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
+        }
+        try {
           clientSocket.close()
 
-        }catch{
-          case e: Exception => log.warning(("Connection possibly timed out before we close it--2-" + e.getMessage).+("\n---") + e.getStackTrace)
-        }
-        try{
-          in.close()
-        }catch{
-          case e: Exception => log.warning(("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
-        }
-        try{
-          out.close()
-        }catch{
-          case e: Exception => log.warning(("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
+        } catch {
+          case e: Exception => logger.log(Level.WARNING, ("Connection possibly timed out before we close it--2-" + e.getMessage + ("\n---") + e.getStackTrace))
         }
       }
+      val request = RequestConnectionFactory.generateRequestConnection(in, out, stream, cleanup)
 
-      runConnection(out, cleanup, in)
+      listenConnection(request)
+      lib.actionRouters.connectionRouters.writeConnectionRouter ! server.TransactionConnectionContainerWriter(request)
     }
 
 
-    case server.TransactionConnectionContainer(request) => {
-      def reroute():Unit = {
-       // lib.actionRouters.connectionRouters.system.scheduler.scheduleOnce(2 milliseconds) {
-          try {
-            lib.actionRouters.connectionRouters.readConnectionRouter ! new server.TransactionConnectionContainer(request)
-          } catch {
-            case e: Throwable => log.debug(s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+    case server.TransactionConnectionContainerWriter(request) => {
+
+      val success = ServerRouter.route(request)
+      lib.actionRouters.connectionRouters.system.scheduler.scheduleOnce(1 milliseconds) {
+        try {
+          if(success){
+            lib.actionRouters.connectionRouters.writeConnectionRouter ! new server.TransactionConnectionContainerWriter(request)
           }
-    //    }
 
+        } catch {
+          case e: Throwable => logger.log(Level.WARNING, s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+        }
       }
-      ServerRouter.route(request, reroute)
     }
 
-    case msg => log.debug(s"Message from  actor : $msg")
   }
 
-  def runConnection(out: Writer, cleanup:()=>Unit, in: BufferedReader) {
-
-    var request:HttpRequest = null
-    try {//work on timeout live
-
-
-      request = RequestConnectionFactory.generateRequestConnection(in, out, cleanup)
-      lib.actionRouters.connectionRouters.readConnectionRouter ! server.TransactionConnectionContainer(request)
-      var header:String = ""
-      var transaction:SingleTransaction = null
-      do{
-        try{
-          header  = readHeader(in)
-          transaction = new SingleTransaction(header)
-
-          transaction.body = readBody(request, in, transaction.postSize)
-
-        }catch {
-          case e:Throwable => {
-            header = ""
-            transaction = new SingleTransaction(null)
-
-            cleanup()
-          }
-
-        }
-
-        request.addTransaction(transaction)
-      }while(header != ""  && transaction.connectionType != "close")
-
-    }
-    catch {
-      case e: Throwable => log.debug(("Connection possibly closed by client---" + e.getMessage).+("\n---"))
-        if(request != null){
+  def listenConnection(request:HttpRequest){
+    try {
+      while(!request.in.ready()){
+        Thread.sleep(1)
+      }
+    }catch {
+      case e: Throwable => logger.log(Level.WARNING, ("Initial reading Connection possibly closed by client---" + e.getMessage).+("\n---"))
+        if (request != null) {
           request.addTransaction(new SingleTransaction(null))
         }
-
-
-        cleanup()
+        request.cleanup()
+      return
     }
-
+    println("going to write!!--------------------")
+    lib.actionRouters.connectionRouters.writeConnectionRouter ! server.TransactionConnectionContainerReader(request)
   }
 
 
-  def readBody(request: HttpRequest, in: BufferedReader, size:Int):String = {
+
+
+
+  def readRequest(request: HttpRequest) {
+    var header: String = ""
+    var transaction: SingleTransaction = null
+
+    try {
+      header = readHeader(request.in)
+      if (header == "") {
+        transaction = new SingleTransaction(null)
+
+      } else {
+        transaction = new SingleTransaction(header)
+        transaction.body = readBody(request, request.in, transaction.postSize)
+      }
+
+    } catch {
+      case e: Throwable => {
+
+        header = ""
+        transaction = new SingleTransaction(null)
+
+        request.cleanup()
+      }
+
+    }
+    request.addTransaction(transaction)
+
+
+
+    if (header != "" && transaction.connectionType != "close") {
+      try {
+        lib.actionRouters.connectionRouters.waitConnectionRouter ! new server.ConnectionReadyWaiter(request)
+
+      } catch {
+        case e: Throwable => logger.log(Level.WARNING, s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+      }
+    }
+  }
+
+  def readBody(request: HttpRequest, in: BufferedReader, size: Int): String = {
     var break2 = true
     var bodyCharArray = new ListBuffer[Char]()
 
@@ -138,7 +178,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         bodyCharArray += char.toChar
         postSizeAcc += 1
         if (char == -1) {
-          return null
+          return ""
         }
         if (postSizeAcc >= size) {
           break2 = true
@@ -146,9 +186,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       }
     }
 
-      if (bodyCharArray.size != 0)
-        bodyCharArray.mkString("")
-      else ""
+    if (bodyCharArray.size != 0)
+      bodyCharArray.mkString("")
+    else ""
   }
 
   def readHeader(in: BufferedReader): String = {
@@ -188,41 +228,42 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
 
 object Main extends App {
-   val system:ActorSystem = ActorSystem.create();
+  val system: ActorSystem = ActorSystem.create();
   //println("----------------------"+system.settings);
-  private val log = Logger.getLogger(getClass.toString)
+  private val log = Helpers.logger(getClass.toString)
   println("FROM SERVER: platypus is starting2")
-/*
-  if(!server.isPortAvailable(Configuration.port)){
-    println("FROM SERVER: platypus is starting3")
-    log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used")
-    System.exit(1)
-  }
-  */
+  /*
+    if(!server.isPortAvailable(Configuration.port)){
+      println("FROM SERVER: platypus is starting3")
+      log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used")
+      System.exit(1)
+    }
+    */
 
   var processName = ManagementFactory.getRuntimeMXBean().getName
 
-  println("FROM SERVER: platypus is starting and process is "+ processName)
 
-  println("process id ----"+ManagementFactory.getRuntimeMXBean().getName().split("@")(0))
   scala.reflect.io.File("PID").writeAll(ManagementFactory.getRuntimeMXBean().getName().split("@")(0))
 
 
   lib.Booter.start()
-  var serverSocket:ServerSocket = null
-  if(server.isPortAvailable(Configuration.port)){
+  var serverSocket: ServerSocket = null
+
+
+  if (server.isPortAvailable(Configuration.port)) {
     serverSocket = new ServerSocket(Configuration.port)
 
-  }else {
-    log.log(Level.SEVERE, "Port number "+Configuration.port+" is already being used.\n")
+  } else {
+    log.log(Level.SEVERE, "Port number " + Configuration.port + " is already being used.\n")
 
   }
-
-  while(true){
+  var i = 0;
+  while (true) {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
-    lib.actionRouters.connectionRouters.readConnectionRouter ! server.ClientSocketContainer(clientSocket)
 
+    lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ClientSocketContainer(clientSocket, i)
+    i += 1
   }
 
   lib.actionRouters.connectionRouters.system.shutdown()
