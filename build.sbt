@@ -32,6 +32,10 @@ resolvers ++= Seq(
   "Sonatype Releases" at "http://oss.sonatype.org/content/repositories/releases"
 )
 
+
+resolvers += "spray repo" at "http://repo.spray.io"
+
+
 libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.11.3" % "test"
 )
@@ -41,6 +45,8 @@ libraryDependencies += "commons-codec" % "commons-codec" % "1.2"
 libraryDependencies += "org.specs2" %% "specs2" % "2.1.1"
 
 libraryDependencies += "org.apache.commons" % "commons-io" % "1.3.2"
+
+libraryDependencies += "io.spray" % "spray-can" % "1.3.0"
 
 
 logLevel := Level.Info
