@@ -118,7 +118,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       request.in.read()
       request.in.reset()
     }catch {
-      case e: Throwable => logger.log(Level.WARNING, ("Initial reading Connection possibly closed by client---" + e.getMessage).+("\n---"))
+      case e: Throwable => logger.log(Level.WARNING, ("Initial reading Connection possibly closed by client---" + e.getMessage) + ":"+ e.getStackTraceString + ("\n---"))
         if (request != null) {
           request.addTransaction(new SingleTransaction(null))
         }
