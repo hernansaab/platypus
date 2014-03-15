@@ -96,14 +96,15 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     case server.TransactionConnectionContainerWriter(request) => {
 
       val success = ServerRouter.route(request)
-      lib.actionRouters.connectionRouters.system.scheduler.scheduleOnce(1 milliseconds) {
-        try {
-          if(success){
-            lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
-          }
 
-        } catch {
-          case e: Throwable => logger.log(Level.WARNING, s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+      if(success){
+        lib.actionRouters.connectionRouters.system.scheduler.scheduleOnce(1 milliseconds) {
+          try {
+            lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
+
+          } catch {
+            case e: Throwable => logger.log(Level.WARNING, s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+          }
         }
       }
     }
@@ -112,9 +113,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
   def listenConnection(request:HttpRequest):Boolean = {
     try {
-      while(!request.in.ready()){
-        Thread.sleep(1)
-      }
+      request.in.mark(4000)
+      request.in.read()
+      request.in.reset()
     }catch {
       case e: Throwable => logger.log(Level.WARNING, ("Initial reading Connection possibly closed by client---" + e.getMessage).+("\n---"))
         if (request != null) {
@@ -264,7 +265,7 @@ object Main extends App {
   while (true) {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
-
+    log.log(Level.INFO, "----------------creating connection----"+i)
     lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ClientSocketContainer(clientSocket, i)
     i += 1
   }
