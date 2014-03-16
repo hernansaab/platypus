@@ -15,7 +15,7 @@ import akka.actor.ActorRef
 
 object ServerRouter {
 
-  private val log = Logger.getLogger(getClass.toString)
+  private val log = Helpers.logger(getClass.toString)
 
   private def _route(request: HttpRequest): Boolean = {
     //GET /static
@@ -29,6 +29,7 @@ object ServerRouter {
       _routeStatic(request);
     } else {
       ApplicationRouter.runViewController(request)
+
     }
     true
   }
@@ -42,7 +43,7 @@ object ServerRouter {
    *         if 2 connection open and transaction occurred
    */
   def route(request: HttpRequest): Int = {
-
+var action = ""
     try {
 
 
@@ -53,6 +54,7 @@ object ServerRouter {
 
 
       if (request.x.isClosedTransaction) {
+        log.log(Level.INFO, "Exit cause its broken")
         return 0 //break loop is it is closed
       }
 
@@ -61,6 +63,8 @@ object ServerRouter {
 
       if (!request.x.isClosedTransaction && !error) {
         _route(request)
+        val st2= System.nanoTime()
+        action = "routed-----"
         request.out.flush()
       } else if (error) {
 
@@ -70,8 +74,9 @@ object ServerRouter {
 
       val duration: Long = System.nanoTime() - request.x.startTime
 
-      if(!(request.x.connectionType != "close" && request.x.isClosedTransaction != true)){
-        return 2
+      if(request.x.connectionType == "close" || request.x.isClosedTransaction == true){
+        log.log(Level.INFO, "Exit cause its not done yet")
+        return 0
       }
 
     } catch {
@@ -80,8 +85,11 @@ object ServerRouter {
         return 0
       }
     }
+
+    log.log(Level.INFO, "Exit cause its end of loop---"+action)
+
    // request.cleanup()
-    return 0
+    return 2
   }
 
   def _errorRoute(request: HttpRequest): Boolean = {

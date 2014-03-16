@@ -21,8 +21,7 @@ import java.lang.management.ManagementFactory
 import scala.reflect.io.File
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
-import java.util.concurrent.TimeUnit
-
+import akka.event._
 /**
  * Created by hernansaab on 2/26/14.
  */
@@ -32,9 +31,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
   import context.dispatcher
 
-  val logger: java.util.logging.Logger = Helpers.logger(self.getClass.toString)
+  val logger:akka.event.LoggingAdapter = Helpers.logger(context.system,self.getClass.toString)
 
-  logger.log(Level.INFO, "constructing stuff")
+  logger.log(akka.event.Logging.LogLevel(1), "constructing stuff")
   def receive: Actor.Receive = {
 
     case server.TransactionConnectionContainerReader(request) => {
@@ -42,7 +41,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         readRequest(request)
       }
       catch {
-        case e: Throwable => logger.log(Level.WARNING, ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
+        case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
           if (request != null) {
             request.addTransaction(new SingleTransaction(null))
           }
@@ -53,7 +52,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     case server.ConnectionReadyWaiter(request) =>{
       listenConnection(request)
     }
-    case server.ClientSocketContainer(clientSocket, id) => {
+    case server.ClientSocketContainer(clientSocket, ts) => {
+      logger.log(akka.event.Logging.LogLevel(1), "INTERCEPT -------------------Process delay  for TS" + ts / 1000000 +
+        "------->" + (System.nanoTime() - ts) / 1000000)
 
       val out = new PrintWriter(clientSocket.getOutputStream, true)
       val stream = new InputStreamReader(clientSocket.getInputStream)
@@ -63,29 +64,27 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           out.flush()
 
         } catch {
-          case e: Exception => logger.log(Level.WARNING, "Connection possibly timed out before we close it--1-" + e.getMessage + ("\n---") + e.getStackTrace)
+          case e: Exception => logger.log(akka.event.Logging.LogLevel(1), "Connection possibly timed out before we close it--1-" + e.getMessage + ("\n---") + e.getStackTrace)
         }
-
 
         try {
           in.close()
         } catch {
-          case e: Exception => logger.log(Level.WARNING, ("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
+          case e: Exception => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
         }
         try {
           out.close()
         } catch {
-          case e: Exception => logger.log(Level.WARNING, ("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
+          case e: Exception => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
         }
         try {
           clientSocket.close()
 
         } catch {
-          case e: Exception => logger.log(Level.WARNING, ("Connection possibly timed out before we close it--2-" + e.getMessage + ("\n---") + e.getStackTrace))
+          case e: Exception => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly timed out before we close it--2-" + e.getMessage + ("\n---") + e.getStackTrace))
         }
       }
-      val request = RequestConnectionFactory.generateRequestConnection(in, out, stream, cleanup)
-
+      val request = RequestConnectionFactory.generateRequestConnection(in, out, ts, stream, cleanup)
       var success = listenConnection(request)
       if(success){
         lib.actionRouters.connectionRouters.workerRouter ! server.TransactionConnectionContainerWriter(request)
@@ -95,21 +94,36 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
 
     case server.TransactionConnectionContainerWriter(request) => {
-
+      val st = System.nanoTime()
       val status = ServerRouter.route(request)
-
-      if(status == 1){
+      if (status == 2) {
+        logger.log(akka.event.Logging.LogLevel(1), "-------------------Process delay  for TS" + request.startTime / 1000000 +
+          "------->" + (System.nanoTime() - request.startTime) / 1000000+"and route delay is ---- "+ (System.nanoTime()-st)/1000000)
       }
-      if(status > 0){
+      if (status != 0) {
+        if (status == 1) {
+          context.system.scheduler.scheduleOnce(1 milliseconds) {
+            try {
+              lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
+
+            } catch {
+              case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+            }
+          }
+        } else {
           try {
             lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
 
           } catch {
-            case e: Throwable => logger.log(Level.WARNING, s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+            case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
           }
         }
+      }
     }
 
+    case _ => {
+      logger.log(akka.event.Logging.LogLevel(1), "------------------woa--------- errr receiving")
+    }
   }
 
   def listenConnection(request:HttpRequest):Boolean = {
@@ -119,7 +133,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         return true
       }
     }catch {
-      case e: Throwable => logger.log(Level.WARNING, ("Initial reading Connection possibly closed by client---" + e.getMessage) + ":"+ e.getStackTraceString + ("\n---"))
+      case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Initial reading Connection possibly closed by client---" + e.getMessage) + ":"+ e.getStackTraceString + ("\n---"))
         if (request != null) {
           request.addTransaction(new SingleTransaction(null))
         }
@@ -168,7 +182,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         lib.actionRouters.connectionRouters.waitConnectionRouter ! new server.ConnectionReadyWaiter(request)
 
       } catch {
-        case e: Throwable => logger.log(Level.WARNING, s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+        case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
       }
     }
   }
@@ -268,7 +282,7 @@ object Main extends App {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
     log.log(Level.INFO, "----------------creating connection----"+i)
-    lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ClientSocketContainer(clientSocket, i)
+    lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ClientSocketContainer(clientSocket, System.nanoTime())
     i += 1
   }
 

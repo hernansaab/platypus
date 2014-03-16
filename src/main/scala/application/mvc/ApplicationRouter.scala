@@ -6,6 +6,8 @@ import server.lib.Helpers._
 import application.mvc._
 import application.mvc
 import net.liftweb.json._
+import java.util.logging.Level
+
 /**
  * Created by hernansaab on 2/27/14.
  */
@@ -37,7 +39,11 @@ object ApplicationRouter {
 
         }
       }
-      case r"^.*/platypus/benchmark/json$$" => r@<<- views.Json.<--(controllers.ShoppingController.response4("blah"))
+      case r"^.*/platypus/benchmark/json$$" => {
+
+        r@<<- views.Json.<--(controllers.ShoppingController.response4("blah"))
+        true
+      }
       case r"^.*/json$$" => r@<<- views.Json.<--(controllers.ShoppingController.unsupported("blah"))
 
 

@@ -11,7 +11,7 @@ import java.util.logging.{Level, Logger}
 /**
  * Created by hernansaab on 2/27/14.
  */
-class HttpRequest(_in:BufferedReader, _out:Writer, _inputStream: InputStreamReader,_cleanup:()=>Unit) {
+class HttpRequest(_in:BufferedReader, _out:Writer, ts:Long, _inputStream: InputStreamReader,_cleanup:()=>Unit) {
 
  private val log = Logger.getLogger(getClass.toString)
 
@@ -19,7 +19,7 @@ class HttpRequest(_in:BufferedReader, _out:Writer, _inputStream: InputStreamRead
   val in:BufferedReader= _in
   val out:Writer = _out
   val cleanup:() => Unit = _cleanup
-  var startTime = System.nanoTime()
+  var startTime = ts
   val inputStream: InputStreamReader = _inputStream
   @volatile var currentTransactionIndex:AtomicInteger = new AtomicInteger(-1)
   @volatile var transactionCount:AtomicInteger = new AtomicInteger(0)
@@ -31,7 +31,7 @@ class HttpRequest(_in:BufferedReader, _out:Writer, _inputStream: InputStreamRead
    * @return status successfull
    */
   def copy():HttpRequest = {
-    val r = new HttpRequest(in, out, inputStream, cleanup)
+    val r = new HttpRequest(in, out, ts, inputStream, cleanup)
     r.transactions = transactions
     r.currentTransactionIndex = currentTransactionIndex
     r.transactionCount = transactionCount

@@ -8,7 +8,7 @@ import lib._
  * Created by hernansaab on 3/8/14.
  */
 object server {
-  case class ClientSocketContainer(sock: Socket, id:Int)
+  case class ClientSocketContainer(sock: Socket, id:Long)
   case class TransactionConnectionContainerWriter(request: HttpRequest)
   case class TransactionConnectionContainerReader(request: HttpRequest)
   case class ConnectionReadyWaiter(request: HttpRequest)
