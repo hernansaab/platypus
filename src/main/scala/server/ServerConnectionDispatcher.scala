@@ -102,13 +102,23 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       }
       if (status != 0) {
 
+        if(status == 2){
           try {
-            lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
+            lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request.copy)
 
           } catch {
             case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
           }
+        }else{
+          context.system.scheduler.scheduleOnce(2 milliseconds) {
+            try {
+              lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request.copy)
 
+            } catch {
+              case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
+            }
+          }
+        }
       }
     }
 
@@ -120,7 +130,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   def listenConnection(request:HttpRequest):Boolean = {
     try {
       if(!request.in.ready()){
-          lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ConnectionReadyWaiter(request)
+        context.system.scheduler.scheduleOnce(2 milliseconds) {
+          lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ConnectionReadyWaiter(request.copy)
+        }
 
         return true
       }
@@ -133,7 +145,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       return false
     }
     println("going to write!!--------------------")
-    lib.actionRouters.connectionRouters.workerRouter ! server.TransactionConnectionContainerReader(request)
+    lib.actionRouters.connectionRouters.workerRouter ! server.TransactionConnectionContainerReader(request.copy)
     return true
   }
 
@@ -171,7 +183,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
     if (header != "" && transaction.connectionType != "close") {
       try {
-        lib.actionRouters.connectionRouters.waitConnectionRouter ! new server.ConnectionReadyWaiter(request)
+        lib.actionRouters.connectionRouters.waitConnectionRouter ! new server.ConnectionReadyWaiter(request.copy)
 
       } catch {
         case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
