@@ -97,8 +97,8 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       val st = System.nanoTime()
       val status = ServerRouter.route(request)
       if (status == 2) {
-        logger.log(akka.event.Logging.LogLevel(1), "-------------------Process delay  for TS" + (System.nanoTime() - request.startTime) / 1000000 +
-          "------->" + (System.nanoTime() - request.startTime) / 1000000+"and route delay is ---- "+ (System.nanoTime()-st)/1000000)
+        logger.log(akka.event.Logging.LogLevel(1), "Process delay  for TS--" + ((System.nanoTime() - request.startTime) / 1000000) +
+          "-->" + ((System.nanoTime() - request.startTime) / 1000000)+"---and route delay is ---- "+ (System.nanoTime()-st)/1000000)
       }
       if (status != 0) {
 
