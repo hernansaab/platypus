@@ -101,23 +101,14 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           "------->" + (System.nanoTime() - request.startTime) / 1000000+"and route delay is ---- "+ (System.nanoTime()-st)/1000000)
       }
       if (status != 0) {
-        if (status == 1) {
-          context.system.scheduler.scheduleOnce(1 milliseconds) {
-            try {
-              lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
 
-            } catch {
-              case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
-            }
-          }
-        } else {
           try {
             lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request)
 
           } catch {
             case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
           }
-        }
+
       }
     }
 
@@ -129,7 +120,8 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   def listenConnection(request:HttpRequest):Boolean = {
     try {
       if(!request.in.ready()){
-        lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ConnectionReadyWaiter(request)
+          lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ConnectionReadyWaiter(request)
+
         return true
       }
     }catch {
