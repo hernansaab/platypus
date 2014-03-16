@@ -47,9 +47,10 @@ var action = ""
     try {
 
 
-      if (!(request.transactionCount.intValue() > (request.currentTransactionIndex.intValue() + 1))) {
-        return 1
-      }
+      log.log(Level.INFO, ">>>>>>>>>>>>>>>>>>>>>>------------------------blocking>>>>-----------"+System.nanoTime())
+      request.blockingReadTransaction()
+      log.log(Level.INFO, ">>>>>>>>>>>>>>>>>>>>>----------------------blocking yes>>>>-----------"+System.nanoTime()+"--"+request.x.path)
+
       request.currentTransactionIndex.incrementAndGet()
 
 

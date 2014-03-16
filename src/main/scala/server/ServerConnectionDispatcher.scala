@@ -58,7 +58,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
       val out = new PrintWriter(clientSocket.getOutputStream, true)
       val stream = new InputStreamReader(clientSocket.getInputStream)
-      val in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
+      val in = new PushbackReader((new InputStreamReader(clientSocket.getInputStream)))
       def cleanup() = {
         try {
           out.flush()
@@ -129,13 +129,15 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
   def listenConnection(request:HttpRequest):Boolean = {
     try {
-      if(!request.in.ready()){
-        context.system.scheduler.scheduleOnce(2 milliseconds) {
-          lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ConnectionReadyWaiter(request.copy)
-        }
+        val c = request.in.read()
 
-        return true
-      }
+        if(c == 65535){
+          request.addTransaction(new SingleTransaction(null))
+          return false
+        }
+        request.in.unread(c)
+        logger.log(akka.event.Logging.LogLevel(1), "characert c read and pushed back-------"+c)
+
     }catch {
       case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Initial reading Connection possibly closed by client---" + e.getMessage) + ":"+ e.getStackTraceString + ("\n---"))
         if (request != null) {
@@ -144,7 +146,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         request.cleanup()
       return false
     }
-    println("going to write!!--------------------")
+    logger.log(akka.event.Logging.LogLevel(1), "going to write!!--------------------")
     lib.actionRouters.connectionRouters.workerRouter ! server.TransactionConnectionContainerReader(request.copy)
     return true
   }
@@ -191,7 +193,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     }
   }
 
-  def readBody(request: HttpRequest, in: BufferedReader, size: Int): String = {
+  def readBody(request: HttpRequest, in: Reader, size: Int): String = {
     var break2 = true
     var bodyCharArray = new ListBuffer[Char]()
 
@@ -201,7 +203,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         val char = in.read()
         bodyCharArray += char.toChar
         postSizeAcc += 1
-        if (char == -1) {
+        if (char == 65535) {
           return ""
         }
         if (postSizeAcc >= size) {
@@ -215,13 +217,13 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     else ""
   }
 
-  def readHeader(in: BufferedReader): String = {
+  def readHeader(in: Reader): String = {
     var headerCharArray = mutable.DoubleLinkedList('\n')
     var break: Boolean = false;
     while (!break) {
       val char = in.read
       //double line ends header
-      if (char == -1) {
+      if (char == 65535) {
         return ""
       } else {
         headerCharArray.append(mutable.DoubleLinkedList(char.toChar))

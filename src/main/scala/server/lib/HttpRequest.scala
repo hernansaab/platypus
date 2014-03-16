@@ -2,29 +2,28 @@ package server.lib
 
 import scala.util.matching.Regex
 import java.io._
-import scala.collection.mutable
 import java.util.concurrent.atomic.AtomicInteger
 import org.joda.time.{LocalDate, DateTime}
 import java.security.SecureRandom
 import java.util.logging.{Level, Logger}
+import java.util.concurrent.{LinkedBlockingQueue, SynchronousQueue, ConcurrentLinkedDeque}
 
 /**
  * Created by hernansaab on 2/27/14.
  */
-class HttpRequest(_in:BufferedReader, _out:Writer, ts:Long, _inputStream: InputStreamReader,_cleanup:()=>Unit) {
+class HttpRequest(_in:PushbackReader, _out:Writer, ts:Long, _inputStream: InputStreamReader,_cleanup:()=>Unit) {
 
  private val log = Logger.getLogger(getClass.toString)
-
+ private var current:SingleTransaction = null
   var firstCharReady = false
-  val in:BufferedReader= _in
+  val in= _in
   val out:Writer = _out
   val cleanup:() => Unit = _cleanup
   var startTime = ts
   val inputStream: InputStreamReader = _inputStream
   @volatile var currentTransactionIndex:AtomicInteger = new AtomicInteger(-1)
   @volatile var transactionCount:AtomicInteger = new AtomicInteger(0)
-
-  @volatile var transactions:mutable.ArrayBuffer[SingleTransaction] = new mutable.ArrayBuffer[SingleTransaction]
+  @volatile var transactionsQ:LinkedBlockingQueue[SingleTransaction] = new LinkedBlockingQueue[SingleTransaction]()
   /**
    * print a string to output connection and close it
    * @param text
@@ -32,7 +31,7 @@ class HttpRequest(_in:BufferedReader, _out:Writer, ts:Long, _inputStream: InputS
    */
   def copy():HttpRequest = {
     val r = new HttpRequest(in, out, ts, inputStream, cleanup)
-    r.transactions = transactions
+    r.transactionsQ = transactionsQ
     r.currentTransactionIndex = currentTransactionIndex
     r.transactionCount = transactionCount
     r.startTime = startTime
@@ -50,7 +49,7 @@ class HttpRequest(_in:BufferedReader, _out:Writer, ts:Long, _inputStream: InputS
     true
   }
   def x():SingleTransaction = {
-    transactions(currentTransactionIndex.intValue())
+    current
   }
   /**
    * print a string to output connection but keep connection open
@@ -63,6 +62,11 @@ class HttpRequest(_in:BufferedReader, _out:Writer, ts:Long, _inputStream: InputS
     true
   }
 
+
+  def blockingReadTransaction():SingleTransaction = {
+    current = transactionsQ.take()
+    return current
+  }
 
   def ^<--():Boolean = {
     cleanup()
@@ -77,7 +81,7 @@ class HttpRequest(_in:BufferedReader, _out:Writer, ts:Long, _inputStream: InputS
   }
 
   def addTransaction(transaction:SingleTransaction): Boolean = {
-    transactions+= transaction
+    transactionsQ.add(transaction)
     transactionCount incrementAndGet()
     true;
     /* val(command, path, argument, httpVersion) = Utils.parseGetCommand(header)
