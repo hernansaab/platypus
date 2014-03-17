@@ -6,8 +6,8 @@ import net.liftweb.json.JsonAST.JValue
  * Created by hernansaab on 3/1/14.
  */
 class AppController {
-  def apply(action:()=>JValue):JValue ={
-    var results:JValue = List()
+  def apply(action:()=>Map[String, Any]):Map[String, Any] ={
+    var results:Map[String,Any] = Map()
     if(beforeFilter()){
       results = action()
     }

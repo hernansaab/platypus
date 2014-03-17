@@ -26,9 +26,9 @@ object DefaultController {
   }
 
 
-  def test(): JValue = {
+  def test(): Map[String, Any] = {
 
-    List(2, 45, 34, 23, 7, 5, 3)
+    Map("2323" -> "dfsdf")
   }
 
 }

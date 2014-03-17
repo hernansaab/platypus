@@ -5,28 +5,28 @@ import net.liftweb.json.JsonDSL._
  * Created by hernansaab on 2/27/14.
  */
 object ShoppingController extends AppController{
-  def update(command:String, post:String): JValue ={
+  def update(command:String, post:String): Map[String, Any] ={
     null
   }
 
-  def remove(arg:String): JValue ={
+  def remove(arg:String): Map[String, Any] ={
     null
   }
 
-  def retrieve(arg:String): JValue ={
+  def retrieve(arg:String): Map[String, Any] ={
     null
   }
 
-  def unsupported(arg:String): JValue ={
+  def unsupported(arg:String): Map[String, Any] ={
 
     (
-      arg ->  ("status" -> "ERROR") ~ ("errors" -> List("Unsupported command."))
+      Map(arg ->  ("status" -> "ERROR") ~ ("errors" -> List("Unsupported command.")))
     )
   }
 
-  def response4(arg:String): JValue ={
+  def response4(arg:String): Map[String, Any] ={
 
-    (
+    Map(
       "message" ->"Hello, World!"
       //arg ->  ("status" -> "DOUBT") ~ ("errors" -> List("I dont know if i should support this command command."))
       )

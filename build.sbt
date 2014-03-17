@@ -48,6 +48,7 @@ libraryDependencies += "org.apache.commons" % "commons-io" % "1.3.2"
 
 libraryDependencies += "io.spray" % "spray-can" % "1.3.0"
 
+libraryDependencies += "com.cloudphysics" %% "jerkson" % "0.6.1"
 
 logLevel := Level.Info
 

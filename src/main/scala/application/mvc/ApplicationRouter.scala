@@ -5,7 +5,6 @@ import server.lib._
 import server.lib.Helpers._
 import application.mvc._
 import application.mvc
-import net.liftweb.json._
 import java.util.logging.Level
 
 /**
