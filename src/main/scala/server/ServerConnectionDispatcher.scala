@@ -220,7 +220,7 @@ object Main extends App {
 
     val out = new PrintWriter(clientSocket.getOutputStream, true)
     val stream = new InputStreamReader(clientSocket.getInputStream)
-    val in = new PushbackReader((new InputStreamReader(clientSocket.getInputStream)))
+    val in = new BufferedReader((new InputStreamReader(clientSocket.getInputStream)))
     def cleanup(): Unit = {
       try {
         out.flush()
