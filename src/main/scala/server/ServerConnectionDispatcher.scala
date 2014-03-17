@@ -7,10 +7,6 @@ import java.net.ServerSocket
 import java.net.Socket
 import scala.collection.mutable.ListBuffer
 import lib._
-
-
-
-
 import scala.collection.mutable._
 import scala.collection.mutable
 import org.fusesource.scalate._
@@ -22,6 +18,9 @@ import scala.reflect.io.File
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
 import akka.event._
+import java.util.concurrent.LinkedBlockingQueue
+import scala.util.control.Breaks._
+
 /**
  * Created by hernansaab on 2/26/14.
  */
@@ -31,101 +30,47 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
   import context.dispatcher
 
-  val logger:akka.event.LoggingAdapter = Helpers.logger(context.system,self.getClass.toString)
+  val logger: akka.event.LoggingAdapter = Helpers.logger(context.system, self.getClass.toString)
 
   logger.log(akka.event.Logging.LogLevel(1), "constructing stuff")
+
   def receive: Actor.Receive = {
 
-    case server.TransactionConnectionContainerReader(request) => {
-      var success = true
-      // while(success){
-      try {
-        success = readRequest(request)
-      }
-      catch {
-        case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
-          request.addTransaction(new SingleTransaction(null))
-          request.cleanup()
-          success = false
-      }
-      if(success){
-        lib.actionRouters.connectionRouters.readerRouter ! server.TransactionConnectionContainerReader(request)
-      }
-      //}
-    }
+    case server.Fire(worker, workersQueue) => {
+      while (true) {
+        breakable {
+          val request = workersQueue.take()
+          var success = true
+          if (request.in.ready()) {
+            try {
+              success = readRequest(request)
+            }
+            catch {
+              case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
+                request.addTransaction(new SingleTransaction(null))
+                request.cleanup()
+                success = false
+            }
+          } else {
+            workersQueue.put(request)
+            break
+          }
+          if (!success) break
 
-   
-    case server.ClientSocketContainer(clientSocket, ts) => {
-      logger.log(akka.event.Logging.LogLevel(1), "INTERCEPT -------------------Process delay  for TS" + ts / 1000000 +
-        "------->" + (System.nanoTime() - ts) / 1000000)
+          val st = System.nanoTime()
+          var writeStatus = 1;
+          writeStatus = ServerRouter.route(request)
+          if (writeStatus == 2) {
+            logger.log(akka.event.Logging.LogLevel(1), "Process delay  for TS--" + ((System.nanoTime() - request.startTime) / 1000000) +
+              "-->" + ((System.nanoTime() - request.startTime) / 1000000) + "---and route delay is ---- " + (System.nanoTime() - st) / 1000000)
+          }
+          if (writeStatus == 0 || !success) {
+            break
+          }
+          workersQueue.put(request)
 
-      val out = new PrintWriter(clientSocket.getOutputStream, true)
-      val stream = new InputStreamReader(clientSocket.getInputStream)
-      val in = new PushbackReader((new InputStreamReader(clientSocket.getInputStream)))
-      def cleanup() = {
-        try {
-          out.flush()
-
-        } catch {
-          case e: Exception => logger.log(akka.event.Logging.LogLevel(1), "Connection possibly timed out before we close it--1-" + e.getMessage + ("\n---") + e.getStackTrace)
-        }
-
-        try {
-          in.close()
-        } catch {
-          case e: Exception => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
-        }
-        try {
-          out.close()
-        } catch {
-          case e: Exception => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
-        }
-        try {
-          clientSocket.close()
-
-        } catch {
-          case e: Exception => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly timed out before we close it--2-" + e.getMessage + ("\n---") + e.getStackTrace))
         }
       }
-      val request = RequestConnectionFactory.generateRequestConnection(in, out, ts, stream, cleanup)
-
-     lib.actionRouters.connectionRouters.writerRouter ! server.TransactionConnectionContainerWriter(request)
-
-      var success = true
-     // while(success){
-        try {
-          success = readRequest(request)
-        }
-        catch {
-          case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
-          request.addTransaction(new SingleTransaction(null))
-          request.cleanup()
-          success = false
-        }
-      if(success){
-        lib.actionRouters.connectionRouters.readerRouter ! server.TransactionConnectionContainerReader(request)
-      }
-      //}
-
-    }
-
-
-    case server.TransactionConnectionContainerWriter(request) => {
-      val st = System.nanoTime()
-
-      var status = 1;
-    //  while(status != 0){
-        status = ServerRouter.route(request)
-        if (status == 2) {
-          logger.log(akka.event.Logging.LogLevel(1), "Process delay  for TS--" + ((System.nanoTime() - request.startTime) / 1000000) +
-            "-->" + ((System.nanoTime() - request.startTime) / 1000000)+"---and route delay is ---- "+ (System.nanoTime()-st)/1000000)
-        }
-
-      if(status != 0){
-        lib.actionRouters.connectionRouters.writerRouter ! server.TransactionConnectionContainerWriter(request)
-      }
-    //  }
-
     }
 
     case _ => {
@@ -134,8 +79,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   }
 
 
-
-  def readRequest(request: HttpRequest):Boolean = {
+  def readRequest(request: HttpRequest): Boolean = {
     var header: String = ""
     var transaction: SingleTransaction = null
 
@@ -261,13 +205,47 @@ object Main extends App {
     log.log(Level.SEVERE, "Port number " + Configuration.port + " is already being used.\n")
 
   }
+
+  val workersQueue: LinkedBlockingQueue[HttpRequest] = new LinkedBlockingQueue[HttpRequest]()
+  for (i <- 1 to Configuration.generators) {
+    lib.actionRouters.connectionRouters.workers ! server.Fire(i, workersQueue)
+  }
+
   var i = 0;
   while (true) {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
-    log.log(Level.INFO, "----------------creating connection----"+i)
-    lib.actionRouters.connectionRouters.readerRouter ! server.ClientSocketContainer(clientSocket, System.nanoTime())
-    i += 1
+    log.log(Level.INFO, "----------------creating connection-------------------" + i)
+
+
+    val out = new PrintWriter(clientSocket.getOutputStream, true)
+    val stream = new InputStreamReader(clientSocket.getInputStream)
+    val in = new PushbackReader((new InputStreamReader(clientSocket.getInputStream)))
+    def cleanup(): Unit = {
+      try {
+        out.flush()
+      } catch {
+        case e: Throwable => log.log(Level.INFO, "Connection possibly timed out before we close it--1-" + e.getMessage + ("\n---") + e.getStackTrace)
+      }
+      try {
+        in.close()
+      } catch {
+        case e: Throwable => log.log(Level.INFO, ("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
+      }
+      try {
+        out.close()
+      } catch {
+        case e: Throwable => log.log(Level.INFO, ("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
+      }
+      try {
+        clientSocket.close()
+      } catch {
+        case e: Throwable => log.log(Level.INFO, ("Connection possibly timed out before we close it--2-" + e.getMessage + ("\n---") + e.getStackTrace))
+      }
+    }
+    val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream, cleanup)
+    workersQueue.add(request)
+
   }
 
   lib.actionRouters.connectionRouters.system.shutdown()
