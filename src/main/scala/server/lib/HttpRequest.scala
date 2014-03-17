@@ -11,7 +11,7 @@ import java.util.concurrent.{LinkedBlockingQueue, SynchronousQueue, ConcurrentLi
 /**
  * Created by hernansaab on 2/27/14.
  */
-class HttpRequest(_in:PushbackReader, _out:Writer, ts:Long, _inputStream: InputStreamReader,_cleanup:()=>Unit) {
+class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamReader,_cleanup:()=>Unit) {
 
  private val log = Logger.getLogger(getClass.toString)
  private var current:SingleTransaction = null
