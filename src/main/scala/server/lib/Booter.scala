@@ -38,8 +38,8 @@ object Booter {
   //  actionRouters.connectionRouters.readConnectionRouter = actionRouters.connectionRouters.system.actorOf(routerProps, "round-robin")
 
     //actionRouters.connectionRouters.readConnectionRouter = actionRouters.connectionRouters.system.actorOf((Props[ServerConnectionDispatcher]), "router1")
-    actionRouters.connectionRouters.waitConnectionRouter = actionRouters.connectionRouters.system.actorOf(FromConfig.props(Props[ServerConnectionDispatcher]), "waiter")
-    actionRouters.connectionRouters.workerRouter = actionRouters.connectionRouters.system.actorOf(FromConfig.props(Props[ServerConnectionDispatcher]), "transactor")
+    actionRouters.connectionRouters.readerRouter = actionRouters.connectionRouters.system.actorOf(FromConfig.props(Props[ServerConnectionDispatcher]), "waiter")
+    actionRouters.connectionRouters.writerRouter = actionRouters.connectionRouters.system.actorOf(FromConfig.props(Props[ServerConnectionDispatcher]), "transactor")
 
    //   actionRouters.connectionRouters.readConnectionRouter = actors(0)
 

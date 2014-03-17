@@ -7,6 +7,6 @@ import akka.actor.{ActorSystem, ActorRef}
  */
 object connectionRouters {
   var system:ActorSystem = null
-  var waitConnectionRouter:ActorRef = null
-  var workerRouter:ActorRef = null
+  var readerRouter:ActorRef = null
+  var writerRouter:ActorRef = null
 }

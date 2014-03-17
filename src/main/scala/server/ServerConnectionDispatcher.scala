@@ -37,21 +37,24 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   def receive: Actor.Receive = {
 
     case server.TransactionConnectionContainerReader(request) => {
+      var success = true
+      // while(success){
       try {
-        readRequest(request)
+        success = readRequest(request)
       }
       catch {
         case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
-          if (request != null) {
-            request.addTransaction(new SingleTransaction(null))
-          }
+          request.addTransaction(new SingleTransaction(null))
           request.cleanup()
+          success = false
       }
+      if(success){
+        lib.actionRouters.connectionRouters.readerRouter ! server.TransactionConnectionContainerReader(request)
+      }
+      //}
     }
 
-    case server.ConnectionReadyWaiter(request) =>{
-      listenConnection(request)
-    }
+   
     case server.ClientSocketContainer(clientSocket, ts) => {
       logger.log(akka.event.Logging.LogLevel(1), "INTERCEPT -------------------Process delay  for TS" + ts / 1000000 +
         "------->" + (System.nanoTime() - ts) / 1000000)
@@ -85,41 +88,44 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         }
       }
       val request = RequestConnectionFactory.generateRequestConnection(in, out, ts, stream, cleanup)
-      var success = listenConnection(request)
-      if(success){
-        lib.actionRouters.connectionRouters.workerRouter ! server.TransactionConnectionContainerWriter(request)
 
+     lib.actionRouters.connectionRouters.writerRouter ! server.TransactionConnectionContainerWriter(request)
+
+      var success = true
+     // while(success){
+        try {
+          success = readRequest(request)
+        }
+        catch {
+          case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
+          request.addTransaction(new SingleTransaction(null))
+          request.cleanup()
+          success = false
+        }
+      if(success){
+        lib.actionRouters.connectionRouters.readerRouter ! server.TransactionConnectionContainerReader(request)
       }
+      //}
+
     }
 
 
     case server.TransactionConnectionContainerWriter(request) => {
       val st = System.nanoTime()
-      val status = ServerRouter.route(request)
-      if (status == 2) {
-        logger.log(akka.event.Logging.LogLevel(1), "Process delay  for TS--" + ((System.nanoTime() - request.startTime) / 1000000) +
-          "-->" + ((System.nanoTime() - request.startTime) / 1000000)+"---and route delay is ---- "+ (System.nanoTime()-st)/1000000)
-      }
-      if (status != 0) {
 
-        if(status == 2){
-          try {
-            lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request.copy)
-
-          } catch {
-            case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
-          }
-        }else{
-          context.system.scheduler.scheduleOnce(2 milliseconds) {
-            try {
-              lib.actionRouters.connectionRouters.workerRouter ! new server.TransactionConnectionContainerWriter(request.copy)
-
-            } catch {
-              case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
-            }
-          }
+      var status = 1;
+    //  while(status != 0){
+        status = ServerRouter.route(request)
+        if (status == 2) {
+          logger.log(akka.event.Logging.LogLevel(1), "Process delay  for TS--" + ((System.nanoTime() - request.startTime) / 1000000) +
+            "-->" + ((System.nanoTime() - request.startTime) / 1000000)+"---and route delay is ---- "+ (System.nanoTime()-st)/1000000)
         }
+
+      if(status != 0){
+        lib.actionRouters.connectionRouters.writerRouter ! server.TransactionConnectionContainerWriter(request)
       }
+    //  }
+
     }
 
     case _ => {
@@ -127,35 +133,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     }
   }
 
-  def listenConnection(request:HttpRequest):Boolean = {
-    try {
-        val c = request.in.read()
-
-        if(c == 65535){
-          request.addTransaction(new SingleTransaction(null))
-          return false
-        }
-        request.in.unread(c)
-        logger.log(akka.event.Logging.LogLevel(1), "characert c read and pushed back-------"+c)
-
-    }catch {
-      case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Initial reading Connection possibly closed by client---" + e.getMessage) + ":"+ e.getStackTraceString + ("\n---"))
-        if (request != null) {
-          request.addTransaction(new SingleTransaction(null))
-        }
-        request.cleanup()
-      return false
-    }
-    logger.log(akka.event.Logging.LogLevel(1), "going to write!!--------------------")
-    lib.actionRouters.connectionRouters.workerRouter ! server.TransactionConnectionContainerReader(request.copy)
-    return true
-  }
 
 
-
-
-
-  def readRequest(request: HttpRequest) {
+  def readRequest(request: HttpRequest):Boolean = {
     var header: String = ""
     var transaction: SingleTransaction = null
 
@@ -163,6 +143,8 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       header = readHeader(request.in)
       if (header == "") {
         transaction = new SingleTransaction(null)
+        request.addTransaction(transaction)
+        return false
 
       } else {
         transaction = new SingleTransaction(header)
@@ -176,21 +158,17 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         transaction = new SingleTransaction(null)
 
         request.cleanup()
+        request.addTransaction(transaction)
+        return false
       }
 
     }
     request.addTransaction(transaction)
 
-
-
     if (header != "" && transaction.connectionType != "close") {
-      try {
-        lib.actionRouters.connectionRouters.waitConnectionRouter ! new server.ConnectionReadyWaiter(request.copy)
-
-      } catch {
-        case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), s"Message from  actor---------------------- route exception----" + e.getMessage + "-----stack:" + e.getStackTraceString)
-      }
+      return true
     }
+    return false
   }
 
   def readBody(request: HttpRequest, in: Reader, size: Int): String = {
@@ -288,7 +266,7 @@ object Main extends App {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
     log.log(Level.INFO, "----------------creating connection----"+i)
-    lib.actionRouters.connectionRouters.waitConnectionRouter ! server.ClientSocketContainer(clientSocket, System.nanoTime())
+    lib.actionRouters.connectionRouters.readerRouter ! server.ClientSocketContainer(clientSocket, System.nanoTime())
     i += 1
   }
 
