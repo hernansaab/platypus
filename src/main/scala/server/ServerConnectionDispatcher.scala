@@ -32,11 +32,13 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
   val logger: akka.event.LoggingAdapter = Helpers.logger(context.system, self.getClass.toString)
 
-  logger.log(akka.event.Logging.LogLevel(1), "constructing stuff")
+  logger.log(akka.event.Logging.LogLevel(3), "constructing stuff")
 
   def receive: Actor.Receive = {
 
     case server.Fire(worker, workersQueue) => {
+      logger.log(akka.event.Logging.LogLevel(3),"----------start of receiver queue "+workersQueue)
+
       while (true) {
         breakable {
           val request = workersQueue.take()
@@ -46,7 +48,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
               success = readRequest(request)
             }
             catch {
-              case e: Throwable => logger.log(akka.event.Logging.LogLevel(1), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
+              case e: Throwable => logger.log(akka.event.Logging.LogLevel(3), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
                 request.addTransaction(new SingleTransaction(null))
                 request.cleanup()
                 success = false
@@ -61,7 +63,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           var writeStatus = 1;
           writeStatus = ServerRouter.route(request)
           if (writeStatus == 2) {
-            logger.log(akka.event.Logging.LogLevel(1), "Process delay  for TS--" + ((System.nanoTime() - request.startTime) / 1000000) +
+            logger.log(akka.event.Logging.LogLevel(3), "Process delay  for TS--" + ((System.nanoTime() - request.startTime) / 1000000) +
               "-->" + ((System.nanoTime() - request.startTime) / 1000000) + "---and route delay is ---- " + (System.nanoTime() - st) / 1000000)
           }
           if (writeStatus == 0 || !success) {
@@ -74,7 +76,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     }
 
     case _ => {
-      logger.log(akka.event.Logging.LogLevel(1), "------------------woa--------- errr receiving")
+      logger.log(akka.event.Logging.LogLevel(3), "------------------woa--------- errr receiving")
     }
   }
 
