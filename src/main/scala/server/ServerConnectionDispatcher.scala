@@ -41,8 +41,11 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
       while (true) {
         breakable {
+
           val request = workersQueue.take()
           var success = true
+
+          val start = System.nanoTime()
           if (request.in.ready()) {
             try {
               success = readRequest(request)
@@ -220,9 +223,9 @@ object Main extends App {
     log.log(Level.INFO, "----------------creating connection-------------------" + i)
 
 
-    val out = new PrintWriter(clientSocket.getOutputStream, true)
+    val out = new BufferedWriter(new PrintWriter(clientSocket.getOutputStream, true))
     val stream = new InputStreamReader(clientSocket.getInputStream)
-    val in = new BufferedReader((new InputStreamReader(clientSocket.getInputStream)))
+    val in = new BufferedReader((new InputStreamReader(clientSocket.getInputStream)), 1000)
     def cleanup(): Unit = {
       try {
         out.flush()
