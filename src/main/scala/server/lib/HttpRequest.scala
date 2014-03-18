@@ -11,14 +11,13 @@ import java.util.concurrent.{LinkedBlockingQueue, SynchronousQueue, ConcurrentLi
 /**
  * Created by hernansaab on 2/27/14.
  */
-class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamReader,_cleanup:()=>Unit) {
+class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamReader) {
 
  private val log = Logger.getLogger(getClass.toString)
  private var current:SingleTransaction = null
   var firstCharReady = false
   val in= _in
   val out:Writer = _out
-  val cleanup:() => Unit = _cleanup
   var startTime = ts
   val inputStream: InputStreamReader = _inputStream
   @volatile var currentTransactionIndex:AtomicInteger = new AtomicInteger(-1)
@@ -30,7 +29,7 @@ class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamRea
    * @return status successfull
    */
   def copy():HttpRequest = {
-    val r = new HttpRequest(in, out, ts, inputStream, cleanup)
+    val r = new HttpRequest(in, out, ts, inputStream)
     r.transactionsQ = transactionsQ
     r.currentTransactionIndex = currentTransactionIndex
     r.transactionCount = transactionCount
@@ -79,6 +78,31 @@ class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamRea
     out.flush()
     true
   }
+
+
+  def cleanup(): Unit = {
+    try {
+      out.flush()
+    } catch {
+      case e: Throwable => log.log(Level.INFO, "Connection possibly timed out before we close it--1-" + e.getMessage + ("\n---") + e.getStackTrace)
+    }
+    try {
+      in.close()
+    } catch {
+      case e: Throwable => log.log(Level.INFO, ("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
+    }
+    try {
+      out.close()
+    } catch {
+      case e: Throwable => log.log(Level.INFO, ("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
+    }
+    try {
+      inputStream.close()
+    } catch {
+      case e: Throwable => log.log(Level.INFO, ("Connection possibly timed out before we close it--2-" + e.getMessage + ("\n---") + e.getStackTrace))
+    }
+  }
+
 
   def addTransaction(transaction:SingleTransaction): Boolean = {
     transactionsQ.add(transaction)

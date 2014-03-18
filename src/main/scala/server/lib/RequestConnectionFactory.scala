@@ -9,8 +9,8 @@ import java.io._
 object RequestConnectionFactory {
 
 
-  def generateRequestConnection(in:Reader, out:Writer, ts:Long, stream:InputStreamReader,  cleanup:() => Unit): HttpRequest = {
-    val request = new HttpRequest(in, out, ts, stream, cleanup)
+  def generateRequestConnection(in:Reader, out:Writer, ts:Long, stream:InputStreamReader): HttpRequest = {
+    val request = new HttpRequest(in, out, ts, stream)
    /* val(command, path, argument, httpVersion) = Utils.parseGetCommand(header)
     request.command = command
     request.path = path

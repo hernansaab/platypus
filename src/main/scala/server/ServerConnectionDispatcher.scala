@@ -37,7 +37,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   def receive: Actor.Receive = {
 
     case server.Fire(worker, workersQueue) => {
-      logger.log(akka.event.Logging.LogLevel(3),"----------start of receiver queue "+workersQueue)
+      logger.log(akka.event.Logging.LogLevel(3),"----------start of receiver queue -----------"+workersQueue)
 
       while (true) {
         breakable {
@@ -45,7 +45,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           val request = workersQueue.take()
           var success = true
 
-          val start = System.nanoTime()
+          val ts1 = System.nanoTime()
           if (request.in.ready()) {
             try {
               success = readRequest(request)
@@ -57,22 +57,23 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 success = false
             }
           } else {
-            workersQueue.put(request)
+            workersQueue.add(request)
             break
           }
           if (!success) break
 
-          val st = System.nanoTime()
+          val ts2 = System.nanoTime()
           var writeStatus = 1;
           writeStatus = ServerRouter.route(request)
+          val ts3 = System.nanoTime()
           if (writeStatus == 2) {
-            logger.log(akka.event.Logging.LogLevel(3), "Process delay  for TS--" + ((System.nanoTime() - request.startTime) / 1000000) +
-              "-->" + ((System.nanoTime() - request.startTime) / 1000000) + "---and route delay is ---- " + (System.nanoTime() - st) / 1000000)
+            logger.log(akka.event.Logging.LogLevel(3), "Total delay--" + ((ts3 - ts1) / 1000000) +
+              "--read delay-->" + ((ts2 - ts1) / 1000000) + "---and route delay is ---- " + (ts3 - ts2) / 1000000)
           }
           if (writeStatus == 0 || !success) {
             break
           }
-          workersQueue.put(request)
+          workersQueue.add(request)
 
         }
       }
@@ -127,12 +128,21 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     if (size != 0) {
       var postSizeAcc: Long = 0;
       while (!break2) {
-        val char = in.read()
-        bodyCharArray += char.toChar
-        postSizeAcc += 1
-        if (char == 65535) {
+
+
+        val buf = Array.ofDim[Char](3000)
+        val value = in.read(buf)
+        if (value == -1) {
           return ""
         }
+
+        logger.log(akka.event.Logging.LogLevel(3),"-----size body------"+buf.size)
+        for (i <- 0 to value - 1) {
+          bodyCharArray+= buf(i)
+          postSizeAcc += 1
+        }
+
+
         if (postSizeAcc >= size) {
           break2 = true
         }
@@ -148,13 +158,20 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     var headerCharArray = mutable.DoubleLinkedList('\n')
     var break: Boolean = false;
     while (!break) {
-      val char = in.read
-      //double line ends header
-      if (char == 65535) {
+      //val char = in.read
+
+      val buf = Array.ofDim[Char](3000)
+      val value = in.read(buf)
+      if (value == -1) {
         return ""
-      } else {
-        headerCharArray.append(mutable.DoubleLinkedList(char.toChar))
       }
+
+      logger.log(akka.event.Logging.LogLevel(3),"-----size------"+buf.size)
+      for (i <- 0 to value - 1) {
+        headerCharArray.append(mutable.DoubleLinkedList(buf(i)))
+      }
+
+
 
       var rev = headerCharArray.reverseIterator
 
@@ -184,7 +201,7 @@ object Main extends App {
   val system: ActorSystem = ActorSystem.create();
   //println("----------------------"+system.settings);
   private val log = Helpers.logger(getClass.toString)
-  println("FROM SERVER: platypus is starting2")
+  println("FROM SERVER: The Platypus is starting")
   /*
     if(!server.isPortAvailable(Configuration.port)){
       println("FROM SERVER: platypus is starting3")
@@ -226,29 +243,7 @@ object Main extends App {
     val out = new BufferedWriter(new PrintWriter(clientSocket.getOutputStream, true))
     val stream = new InputStreamReader(clientSocket.getInputStream)
     val in = new BufferedReader((new InputStreamReader(clientSocket.getInputStream)), 1000)
-    def cleanup(): Unit = {
-      try {
-        out.flush()
-      } catch {
-        case e: Throwable => log.log(Level.INFO, "Connection possibly timed out before we close it--1-" + e.getMessage + ("\n---") + e.getStackTrace)
-      }
-      try {
-        in.close()
-      } catch {
-        case e: Throwable => log.log(Level.INFO, ("Connection possibly timed out before we close it--3-" + e.getMessage).+("\n---") + e.getStackTrace)
-      }
-      try {
-        out.close()
-      } catch {
-        case e: Throwable => log.log(Level.INFO, ("Connection possibly timed out before we close it--4-" + e.getMessage).+("\n---") + e.getStackTrace)
-      }
-      try {
-        clientSocket.close()
-      } catch {
-        case e: Throwable => log.log(Level.INFO, ("Connection possibly timed out before we close it--2-" + e.getMessage + ("\n---") + e.getStackTrace))
-      }
-    }
-    val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream, cleanup)
+    val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream)
     workersQueue.add(request)
 
   }
