@@ -46,10 +46,7 @@ object ServerRouter {
 var action = ""
     try {
 
-
-      log.log(Level.INFO, ">>>>>>>>>>>>>>>>>>>>>>------------------------blocking>>>>-----------"+System.nanoTime())
       request.blockingReadTransaction()
-      log.log(Level.INFO, ">>>>>>>>>>>>>>>>>>>>>----------------------blocking yes>>>>-----------"+System.nanoTime()+"--"+request.x.path)
 
       request.currentTransactionIndex.incrementAndGet()
 
@@ -61,16 +58,14 @@ var action = ""
 
 
       val error = _errorRoute(request)
-
+      val st2= System.nanoTime()
       if (!request.x.isClosedTransaction && !error) {
-        _route(request)
-        val st2= System.nanoTime()
-        action = "routed-----"
-        request.out.flush()
-      } else if (error) {
 
-        request.out.flush()
+        _route(request)
+
+      //  log.log(Level.WARNING, "------------route delay------------------"+(System.nanoTime()-st2)/1000)
       }
+     // log.log(Level.WARNING, "------------route delay with flush------------------"+(System.nanoTime()-st2)/1000)
 
 
       val duration: Long = System.nanoTime() - request.x.startTime

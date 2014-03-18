@@ -40,6 +40,9 @@ class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamRea
     try{
       out.write(text);
       out.flush()
+
+      val ts3 = System.nanoTime()
+
     }catch{
       case e:Throwable => {
         log.log(Level.INFO, "Unable to write response because connection already closed:\n"+e.getStackTraceString)

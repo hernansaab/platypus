@@ -11,8 +11,16 @@ import java.util.logging.Level
  * Created by hernansaab on 2/27/14.
  */
 object ApplicationRouter {
+  private val log = Helpers.logger(getClass.toString)
+
   def runViewController(r: HttpRequest):Boolean = {
     r.x.path match {
+
+      case "/platypus/benchmark/json" => {
+        r@<<- views.Json.<--(controllers.ShoppingController.response4("blah"))
+        true
+      }
+
       case "" | "/" | r"/index"=> {
         val x = controllers.DefaultController.index(r.x.command)
         r@<<- x //controller renders view directly through a ssp file set in the controller/action DefaultController/index
@@ -29,7 +37,7 @@ object ApplicationRouter {
 
       case r"/test" =>  r@<<- views.Json(controllers.DefaultController.test())
 
-      case r"^/shopping/api/v1/json" => {
+      case "/shopping/api/v1/json" => {
         r.x.command match {
             case "POST" =>    r@<<- views.Json.<-- (controllers.ShoppingController.update(r.x.command, r.x.body))
             case "GET" =>     r@<<- views.Json.<-- (controllers.ShoppingController.retrieve(r.x.command))
@@ -38,11 +46,7 @@ object ApplicationRouter {
 
         }
       }
-      case r"^.*/platypus/benchmark/json$$" => {
 
-        r@<<- views.Json.<--(controllers.ShoppingController.response4("blah"))
-        true
-      }
       case r"^.*/json$$" => r@<<- views.Json.<--(controllers.ShoppingController.unsupported("blah"))
 
 
