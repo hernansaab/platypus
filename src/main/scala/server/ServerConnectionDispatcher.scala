@@ -235,7 +235,7 @@ object Main extends App {
   while (true) {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
-    log.log(Level.INFO, "----------------creating connection-------------------" + i)
+    //log.log(Level.INFO, "----------------creating connection-------------------" + i)
 
 
     val out = new BufferedWriter(new PrintWriter(clientSocket.getOutputStream, true))

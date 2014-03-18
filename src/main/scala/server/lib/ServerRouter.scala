@@ -82,7 +82,7 @@ var action = ""
       }
     }
 
-    log.log(Level.INFO, "Exit cause its end of loop---"+action)
+    l
 
    // request.cleanup()
     return 2
