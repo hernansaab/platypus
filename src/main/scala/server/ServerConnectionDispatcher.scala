@@ -238,7 +238,7 @@ object Main extends App {
     //log.log(Level.INFO, "----------------creating connection-------------------" + i)
 
 
-    val out = new BufferedWriter(new PrintWriter(clientSocket.getOutputStream, true))
+    val out = new BufferedOutputStream(clientSocket.getOutputStream)
     val stream = new InputStreamReader(clientSocket.getInputStream)
     val in = new BufferedReader((new InputStreamReader(clientSocket.getInputStream)), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream)

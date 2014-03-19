@@ -82,7 +82,6 @@ var action = ""
       }
     }
 
-    l
 
    // request.cleanup()
     return 2

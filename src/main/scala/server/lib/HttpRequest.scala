@@ -11,13 +11,13 @@ import java.util.concurrent.{LinkedBlockingQueue, SynchronousQueue, ConcurrentLi
 /**
  * Created by hernansaab on 2/27/14.
  */
-class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamReader) {
+class HttpRequest(_in:Reader, _out:BufferedOutputStream, ts:Long, _inputStream: InputStreamReader) {
 
  private val log = Logger.getLogger(getClass.toString)
  private var current:SingleTransaction = null
   var firstCharReady = false
   val in= _in
-  val out:Writer = _out
+  val out:BufferedOutputStream = _out
   var startTime = ts
   val inputStream: InputStreamReader = _inputStream
   @volatile var currentTransactionIndex:AtomicInteger = new AtomicInteger(-1)
@@ -38,7 +38,8 @@ class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamRea
   }
   def @<<-(text:String):Boolean = {
     try{
-      out.write(text);
+
+      out.write(text.getBytes)
       out.flush()
 
       val ts3 = System.nanoTime()
@@ -59,7 +60,7 @@ class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamRea
    * @return status successfull
    */
   def <<-(text:String):Boolean = {
-    out.write(text)
+    out.write(text.toByte)
     out.flush()
     true
   }
@@ -77,7 +78,7 @@ class HttpRequest(_in:Reader, _out:Writer, ts:Long, _inputStream: InputStreamRea
 
   def append(c:Int):Boolean = {
 
-    out.append(c.toChar)
+    out.write(c)
     out.flush()
     true
   }
