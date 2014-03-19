@@ -5,16 +5,22 @@ import com.codahale.jerkson.Json._
 
 
 import scala.text.Document
+import server.lib.{Helpers, views}
+import application.mvc.controllers
+import java.util.logging.Level
+
 /**
  * Created by hernansaab on 2/28/14.
  */
 object Json {
+
+  private val log = Helpers.logger(getClass.toString)
+
   def apply(data:Map[String, Any]):String ={
-
     val content:String =  generate(data)
+    val ret = headers.Common.json(content.size)+content
+    ret
 
-   // val content:String = generate(Map("one"->1, "two"->"dos"))
-    headers.Common.json(content.size)+content
   }
 
   def genericUnsupported(path:String):String = {

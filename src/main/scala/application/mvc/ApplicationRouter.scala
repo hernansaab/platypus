@@ -17,7 +17,9 @@ object ApplicationRouter {
     r.x.path match {
 
       case "/platypus/benchmark/json" => {
+
         r@<<- views.Json.<--(controllers.ShoppingController.response4("blah"))
+
         true
       }
 

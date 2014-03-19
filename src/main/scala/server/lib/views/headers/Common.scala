@@ -12,13 +12,13 @@ object Common {
     val dt:DateTime = DateTime.now(DateTimeZone.forID("GMT"))
     val fmt:DateTimeFormatter = DateTimeFormat.forPattern("E, dd MMM yyyy kk:mm:ss");
     val date:String = fmt.print(dt)+ " GMT";
-    f"""HTTP/1.1 200 Accepted
-      |Content-type: application/json
-      |Content-Length: ${size}
-      |Date: ${date}
-      |Server: Platypus
-      |
-      |""".stripMargin
+    """HTTP/1.1 200 Accepted
+Content-type: application/json
+Content-Length: """+size+"""
+Date: """+date+"""
+Server: Platypus
+
+""".stripMargin
   }
 
   def response415:String ={
@@ -34,14 +34,14 @@ object Common {
     val fmt:DateTimeFormatter = DateTimeFormat.forPattern("E, dd MMM yyyy kk:mm:ss");
     val date:String = fmt.print(dt)+ " GMT";
 
-    f"""HTTP/1.0 404 Not Found
-      |Date: ${date}
-      |Server: Platypus
-      |Content-Length: 14
-      |Connection: close
-      |Content-Type: text/html
-      |
-      |"""stripMargin
+    """HTTP/1.0 404 Not Found
+Date: """+date+"""
+Server: Platypus
+Content-Length: 14
+Connection: close
+Content-Type: text/html
+
+"""stripMargin
   }
 
 

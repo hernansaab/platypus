@@ -38,11 +38,8 @@ class HttpRequest(_in:Reader, _out:BufferedOutputStream, ts:Long, _inputStream: 
   }
   def @<<-(text:String):Boolean = {
     try{
-
       out.write(text.getBytes)
       out.flush()
-
-      val ts3 = System.nanoTime()
 
     }catch{
       case e:Throwable => {

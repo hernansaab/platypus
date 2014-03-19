@@ -67,8 +67,8 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           writeStatus = ServerRouter.route(request)
           val ts3 = System.nanoTime()
           if (writeStatus == 2) {
-            logger.log(akka.event.Logging.LogLevel(3), "Total delay--" + ((ts3 - ts1) / 1000) +
-              "--read delay-->" + ((ts2 - ts1) / 1000) + "---and route delay is ---- " + (ts3 - ts2) / 1000)
+       //     logger.log(akka.event.Logging.LogLevel(3), "Total delay--" + ((ts3 - ts1) / 1000) +
+         //     "--read delay-->" + ((ts2 - ts1) / 1000) + "---and route delay is ---- " + (ts3 - ts2) / 1000)
           }
           if (writeStatus == 0 || !success) {
             break
@@ -220,7 +220,7 @@ object Main extends App {
 
   if (server.isPortAvailable(Configuration.port)) {
     serverSocket = new ServerSocket(Configuration.port)
-
+    serverSocket.setReuseAddress(true);
   } else {
     log.log(Level.SEVERE, "Port number " + Configuration.port + " is already being used.\n")
 
