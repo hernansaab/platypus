@@ -75,7 +75,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
               }
             } catch {
               case e: Throwable => //maybe caused by reading empty buffer
-                logger.log(akka.event.Logging.LogLevel(2), "---------xxxxxccccccccccccc---------woa--------- errr queue size---"+workersQueue.size())
                 break()
               //   request.cleanup()
             //    break
