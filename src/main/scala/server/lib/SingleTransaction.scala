@@ -13,7 +13,14 @@ class SingleTransaction(_header:String) {
   val header = if(_header == null) "" else _header
   private val log = Logger.getLogger(getClass.toString)
 
-  val(command, path, argument, httpVersion, contentType, contentEncoding, connectionType, postSize) = Utils.parseGetCommand(header)
+  if(_header == null){
+
+  }
+  val(command, path, argument, httpVersion, contentType, contentEncoding, connectionType, postSize) =
+    if(_header != null)
+      Utils.parseGetCommand(header)
+    else
+      ("", "","", "", "" , "" ,"",  0)
 
   var body:String = null
   var startTime = System.nanoTime()

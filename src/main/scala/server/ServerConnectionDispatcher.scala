@@ -3,8 +3,7 @@ package server
 import akka.actor._
 import akka.routing.RoundRobinRouter
 import java.io._
-import java.net.ServerSocket
-import java.net.Socket
+import java.net.{SocketException, ServerSocket, Socket}
 import scala.collection.mutable.ListBuffer
 import lib._
 import scala.collection.mutable._
@@ -50,7 +49,16 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           val request = workersQueue.take()
           var success = true
 
-          if (request.in.ready()) {
+          var ready = false
+          try{
+            ready = request.in.ready()
+          }catch{
+            case e: Throwable =>
+
+          }
+
+
+          if (ready) {
             try {
               success = readRequest(request)
 
@@ -70,14 +78,19 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 break()
               } else {
                 request.cleanup()
-
                 break
               }
             } catch {
               case e: Throwable => //maybe caused by reading empty buffer
-                break()
-              //   request.cleanup()
-              //    break
+              //  request.cleanup(
+              // )
+
+              //  logger.log(akka.event.Logging.LogLevel(3), ("before cleanup possibly closed by client---"))
+              //  request.cleanup()
+              //  logger.log(akka.event.Logging.LogLevel(3), ("after cleanup possibly closed by client---" ))
+              //  break()
+                  workersQueue.add(request)
+                  break
             }
 
           }
@@ -90,6 +103,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             //          "--read delay-->" + ((ts2 - ts1) / 1000) + "---and route delay is ---- " + (ts3 - ts2) / 1000)
           }
           if (writeStatus == 0 || !success) {
+            request.cleanup()
             break
           }
           workersQueue.add(request)
