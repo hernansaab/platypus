@@ -62,13 +62,7 @@ var action = ""
       if (!request.x.isClosedTransaction && !error) {
 
         _route(request)
-
-      //  log.log(Level.WARNING, "------------route delay------------------"+(System.nanoTime()-st2)/1000)
       }
-     // log.log(Level.WARNING, "------------route delay with flush------------------"+(System.nanoTime()-st2)/1000)
-
-
-      val duration: Long = System.nanoTime() - request.x.startTime
 
       if(request.x.connectionType == "close" || request.x.isClosedTransaction == true){
         log.log(Level.INFO, "Exit cause its not done yet")
