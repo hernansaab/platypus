@@ -167,8 +167,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
         if (headerCharArray.size >= 3) {
           val size = headerCharArray.size
-          val (current, prev, prevPrev, prevPrevPrev) = (buf(i), headerCharArray(size-1), headerCharArray(size-2), headerCharArray(size-3))
-          if (current == '\n' && prev == '\r' && prevPrev == '\n' && prevPrevPrev == '\r') {
+          if (buf(i) == '\n'  && headerCharArray(size-2) == '\n') {
             headerCharArray = headerCharArray.drop(1)
 
             break = true
