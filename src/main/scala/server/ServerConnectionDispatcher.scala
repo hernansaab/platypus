@@ -44,7 +44,10 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
           val request = workersQueue.take()
           var success = true
-
+          if(!request.in.ready()){
+            workersQueue.add(request)
+            break
+          }
           val ts1 = System.nanoTime()
           if (request.in.ready()) {
             try {
