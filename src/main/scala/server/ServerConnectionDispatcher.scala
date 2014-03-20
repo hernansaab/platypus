@@ -44,7 +44,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         breakable {
           x += 1
           if(x == 1000000){
-            logger.log(akka.event.Logging.LogLevel(1), "------------------woa--------- errr queue size---"+workersQueue.size())
+            logger.log(akka.event.Logging.LogLevel(3), "------------------woa--------- errr queue size---"+workersQueue.size())
             x = 0
           }
           val request = workersQueue.take()
@@ -53,6 +53,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           if (request.in.ready()) {
             try {
               success = readRequest(request)
+
             }
             catch {
               case e: Throwable => logger.log(akka.event.Logging.LogLevel(3), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
@@ -61,13 +62,25 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 success = false
             }
           } else {
-
-            val line = request.in.read()
-            if(line != -1 && line != 65535){
+            try {
+              val line = request.in.read()
+              if (line != -1 && line != 65535) {
                 request.in.unread(line)
+                workersQueue.add(request)
+                break()
+              }else{
+                request.cleanup()
+
+                break
+              }
+            } catch {
+              case e: Throwable => //maybe caused by reading empty buffer
+                logger.log(akka.event.Logging.LogLevel(2), "---------xxxxxccccccccccccc---------woa--------- errr queue size---"+workersQueue.size())
+                break()
+              //   request.cleanup()
+            //    break
             }
-            workersQueue.add(request)
-            break
+
           }
           if (!success) break
 
