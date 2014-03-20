@@ -37,14 +37,14 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   def receive: Actor.Receive = {
 
     case server.Fire(worker, workersQueue) => {
-      logger.log(akka.event.Logging.LogLevel(3),"----------start of receiver queue -----------"+workersQueue)
+      logger.log(akka.event.Logging.LogLevel(3), "----------start of receiver queue -----------" + workersQueue)
 
       var x = 0
       while (true) {
         breakable {
           x += 1
-          if(x == 1000000){
-            logger.log(akka.event.Logging.LogLevel(3), "------------------woa--------- errr queue size---"+workersQueue.size())
+          if (x == 1000000) {
+            logger.log(akka.event.Logging.LogLevel(3), "------------------woa--------- errr queue size---" + workersQueue.size())
             x = 0
           }
           val request = workersQueue.take()
@@ -68,7 +68,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 request.in.unread(line)
                 workersQueue.add(request)
                 break()
-              }else{
+              } else {
                 request.cleanup()
 
                 break
@@ -77,7 +77,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
               case e: Throwable => //maybe caused by reading empty buffer
                 break()
               //   request.cleanup()
-            //    break
+              //    break
             }
 
           }
@@ -86,8 +86,8 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           var writeStatus = 1;
           writeStatus = ServerRouter.route(request)
           if (writeStatus == 2) {
-       //     logger.log(akka.event.Logging.LogLevel(3), "Total delay--" + ((ts3 - ts1) / 1000) +
-    //          "--read delay-->" + ((ts2 - ts1) / 1000) + "---and route delay is ---- " + (ts3 - ts2) / 1000)
+            //     logger.log(akka.event.Logging.LogLevel(3), "Total delay--" + ((ts3 - ts1) / 1000) +
+            //          "--read delay-->" + ((ts2 - ts1) / 1000) + "---and route delay is ---- " + (ts3 - ts2) / 1000)
           }
           if (writeStatus == 0 || !success) {
             break
@@ -109,7 +109,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     var transaction: SingleTransaction = null
 
     try {
+
       header = readHeader(request.in)
+
       if (header == "") {
         transaction = new SingleTransaction(null)
         request.addTransaction(transaction)
@@ -155,9 +157,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           return ""
         }
 
-        logger.log(akka.event.Logging.LogLevel(3),"-----size body------"+buf.size)
+        logger.log(akka.event.Logging.LogLevel(3), "-----size body------" + buf.size)
         for (i <- 0 to value - 1) {
-          bodyCharArray+= buf(i)
+          bodyCharArray += buf(i)
           postSizeAcc += 1
         }
 
@@ -174,33 +176,35 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   }
 
   def readHeader(in: Reader): String = {
-    var headerCharArray = mutable.DoubleLinkedList('\n')
+    var headerCharArray = new ArrayBuffer[Char]
     var break: Boolean = false;
     while (!break) {
       //val char = in.read
 
       val buf = Array.ofDim[Char](3000)
+
       val value = in.read(buf)
+
+
+
+
       if (value == -1) {
         return ""
       }
-      breakable {for (i <- 0 to value - 1) {
+      breakable {
+        for (i <- 0 to value - 1) {
+          if (headerCharArray.size >= 3) {
+            val size = headerCharArray.size
+            if (buf(i) == '\n' && headerCharArray(size - 2) == '\n') {
+             // headerCharArray = headerCharArray.drop(1)
 
-
-        if (headerCharArray.size >= 3) {
-          val size = headerCharArray.size
-          if (buf(i) == '\n'  && headerCharArray(size-2) == '\n') {
-            headerCharArray = headerCharArray.drop(1)
-
-            break = true
-            break
+              break = true
+              break
+            }
           }
+          headerCharArray+=(buf(i))
         }
-        headerCharArray.append(mutable.DoubleLinkedList(buf(i)))
       }
-      }
-
-
 
 
     }
