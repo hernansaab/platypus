@@ -32,16 +32,21 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
   val logger: akka.event.LoggingAdapter = Helpers.logger(context.system, self.getClass.toString)
 
-  logger.log(akka.event.Logging.LogLevel(3), "constructing stuff")
+  logger.log(akka.event.Logging.LogLevel(2), "constructing stuff")
 
   def receive: Actor.Receive = {
 
     case server.Fire(worker, workersQueue) => {
       logger.log(akka.event.Logging.LogLevel(3),"----------start of receiver queue -----------"+workersQueue)
 
+      var x = 0
       while (true) {
         breakable {
-
+          x += 1
+          if(x == 1000000){
+            logger.log(akka.event.Logging.LogLevel(1), "------------------woa--------- errr queue size---"+workersQueue.size())
+            x = 0
+          }
           val request = workersQueue.take()
           var success = true
 
@@ -56,6 +61,11 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 success = false
             }
           } else {
+
+            val line = request.in.read()
+            if(line != -1 && line != 65535){
+                request.in.unread(line)
+            }
             workersQueue.add(request)
             break
           }
@@ -236,7 +246,7 @@ object Main extends App {
 
     val out = new BufferedOutputStream(clientSocket.getOutputStream)
     val stream = new InputStreamReader(clientSocket.getInputStream)
-    val in = new BufferedReader((new InputStreamReader(clientSocket.getInputStream)), 1000)
+    val in = new PushbackReader(new BufferedReader((stream), 1000), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream)
     workersQueue.add(request)
 

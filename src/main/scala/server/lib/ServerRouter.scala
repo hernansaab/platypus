@@ -58,7 +58,6 @@ var action = ""
 
 
       val error = _errorRoute(request)
-      val st2= System.nanoTime()
       if (!request.x.isClosedTransaction && !error) {
 
         _route(request)
