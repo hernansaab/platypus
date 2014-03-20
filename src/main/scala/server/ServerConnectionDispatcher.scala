@@ -165,27 +165,27 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       if (value == -1) {
         return ""
       }
-      for (i <- 0 to value - 1) {
+      breakable {for (i <- 0 to value - 1) {
+
+
+        if (headerCharArray.size >= 3) {
+          val size = headerCharArray.size
+          val (current, prev, prevPrev, prevPrevPrev) = (buf(i), headerCharArray(size-1), headerCharArray(size-2), headerCharArray(size-3))
+          if (current == '\n' && prev == '\r' && prevPrev == '\n' && prevPrevPrev == '\r') {
+            headerCharArray = headerCharArray.drop(1)
+
+            break = true
+            break
+          }
+        }
         headerCharArray.append(mutable.DoubleLinkedList(buf(i)))
       }
-
-
-
-      var rev = headerCharArray.reverseIterator
-
-      var current: Int = '\0'
-      var prev: Int = '\0'
-      var prevPrev: Int = '\0'
-      var prevPrevPrev: Int = '\0'
-      if (headerCharArray.size >= 4) {
-        val (current, prev, prevPrev, prevPrevPrev) = (rev.next, rev.next, rev.next, rev.next)
-        if (current == '\n' && prev == '\r' && prevPrev == '\n' && prevPrevPrev == '\r') {
-          break = true
-        }
       }
 
+
+
+
     }
-    headerCharArray = headerCharArray.drop(1)
     val header =
       if (headerCharArray.size != 0)
         headerCharArray.mkString("")
