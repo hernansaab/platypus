@@ -82,14 +82,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
               }
             } catch {
               case e: Throwable => //maybe caused by reading empty buffer
-              //  request.cleanup(
-              // )
-
-              //  logger.log(akka.event.Logging.LogLevel(3), ("before cleanup possibly closed by client---"))
-              //  request.cleanup()
-              //  logger.log(akka.event.Logging.LogLevel(3), ("after cleanup possibly closed by client---" ))
-              //  break()
-                  workersQueue.add(request)
                   break
             }
 
