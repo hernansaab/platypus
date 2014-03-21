@@ -19,6 +19,7 @@ class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _input
   val in= _in
   val out:BufferedOutputStream = _out
   var startTime = ts
+  var notReadyCount = 0
   val inputStream: InputStreamReader = _inputStream
   @volatile var currentTransactionIndex:AtomicInteger = new AtomicInteger(-1)
   @volatile var transactionCount:AtomicInteger = new AtomicInteger(0)

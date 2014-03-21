@@ -38,17 +38,10 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     case server.Fire(worker, workersQueue) => {
       logger.log(akka.event.Logging.LogLevel(3), "----------start of receiver queue -----------" + workersQueue)
 
-      var x = 0
       while (true) {
         breakable {
-          x += 1
-          if (x == 1000000) {
-            logger.log(akka.event.Logging.LogLevel(3), "------------------woa--------- errr queue size---" + workersQueue.size())
-            x = 0
-          }
           val request = workersQueue.poll()
           if(request == null) break()
-
           var success = true
           var ready = false
           try{
@@ -68,6 +61,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 success = false
             }
           } else {
+            request.notReadyCount += 1
+            if(request.notReadyCount == 100){
+              request.notReadyCount = 0
             try {
               val line = request.in.read()
               if (line != -1 && line != 65535) {
@@ -81,6 +77,10 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             } catch {
               case e: Throwable =>
                   break
+            }
+            }else{
+              workersQueue.add(request)
+              break()
             }
           }
           if (!success) break
@@ -98,7 +98,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         }
       }
     }
-
     case _ => {
       logger.log(akka.event.Logging.LogLevel(3), "------------------woa--------- errr receiving")
     }
@@ -257,14 +256,14 @@ object Main extends App {
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
     clientSocket.setTcpNoDelay(true)
     clientSocket.isConnected
-    log.log(Level.INFO, "-----------is it tcp_nodel-----creating connection-------------------" + i+"----"+clientSocket.getTcpNoDelay)
+  //  log.log(Level.INFO, "-----------is it tcp_nodel-----creating connection-------------------" + i+"----"+clientSocket.getTcpNoDelay)
 
 
     val out = new BufferedOutputStream(clientSocket.getOutputStream, 1024)
     val stream = new InputStreamReader(clientSocket.getInputStream)
     val in = new PushbackReader(new BufferedReader((stream), 1000), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream)
-    workersQueue.add(request)
+    workersQueue.offer(request)
 
   }
 
