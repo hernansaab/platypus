@@ -46,7 +46,9 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             logger.log(akka.event.Logging.LogLevel(3), "------------------woa--------- errr queue size---" + workersQueue.size())
             x = 0
           }
-          val request = workersQueue.take()
+          val request = workersQueue.poll()
+          if(request == null) break()
+
           var success = true
           var ready = false
           try{
@@ -77,7 +79,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 break
               }
             } catch {
-              case e: Throwable => //maybe caused by reading empty buffer
+              case e: Throwable =>
                   break
             }
           }
@@ -248,12 +250,14 @@ object Main extends App {
   for (i <- 1 to Configuration.generators) {
     lib.actionRouters.connectionRouters.workers ! server.Fire(i, workersQueue)
   }
-
+  serverSocket.setPerformancePreferences(0,2,0)
   var i = 0;
   while (true) {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
-    //log.log(Level.INFO, "----------------creating connection-------------------" + i)
+    clientSocket.setTcpNoDelay(true)
+    clientSocket.isConnected
+    log.log(Level.INFO, "-----------is it tcp_nodel-----creating connection-------------------" + i+"----"+clientSocket.getTcpNoDelay)
 
 
     val out = new BufferedOutputStream(clientSocket.getOutputStream, 1024)
