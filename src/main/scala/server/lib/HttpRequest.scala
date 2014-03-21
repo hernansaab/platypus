@@ -38,9 +38,10 @@ class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _input
   }
   def @<<-(text:String):Boolean = {
     try{
-      out.write(text.getBytes)
-      out.flush()
 
+      out.write(text.getBytes)
+
+      out.flush()
     }catch{
       case e:Throwable => {
         log.log(Level.INFO, "Unable to write response because connection already closed:\n"+e.getStackTraceString)

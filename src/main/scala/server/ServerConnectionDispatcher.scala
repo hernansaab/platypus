@@ -48,7 +48,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           }
           val request = workersQueue.take()
           var success = true
-
           var ready = false
           try{
             ready = request.in.ready()
@@ -56,8 +55,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             case e: Throwable =>
               break()
           }
-
-
           if (ready) {
             try {
               success = readRequest(request)
@@ -83,10 +80,8 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
               case e: Throwable => //maybe caused by reading empty buffer
                   break
             }
-
           }
           if (!success) break
-
           var writeStatus = 1;
           writeStatus = ServerRouter.route(request)
           if (writeStatus == 2) {
@@ -98,7 +93,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             break
           }
           workersQueue.add(request)
-
         }
       }
     }
@@ -262,7 +256,7 @@ object Main extends App {
     //log.log(Level.INFO, "----------------creating connection-------------------" + i)
 
 
-    val out = new BufferedOutputStream(clientSocket.getOutputStream)
+    val out = new BufferedOutputStream(clientSocket.getOutputStream, 1024)
     val stream = new InputStreamReader(clientSocket.getInputStream)
     val in = new PushbackReader(new BufferedReader((stream), 1000), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream)
