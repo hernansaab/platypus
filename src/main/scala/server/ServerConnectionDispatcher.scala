@@ -41,12 +41,12 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
       while (true) {
         breakable {
           val request = workersQueue.poll()
-          if(request == null) break()
+          if (request == null) break()
           var success = true
           var ready = false
-          try{
+          try {
             ready = request.in.ready()
-          }catch{
+          } catch {
             case e: Throwable =>
               break()
           }
@@ -62,23 +62,23 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             }
           } else {
             request.notReadyCount += 1
-            if(request.notReadyCount == 100){
+            if (request.notReadyCount == 100) {
               request.notReadyCount = 0
-            try {
-              val line = request.in.read()
-              if (line != -1 && line != 65535) {
-                request.in.unread(line)
-                workersQueue.add(request)
-                break()
-              } else {
-                request.cleanup()
-                break
-              }
-            } catch {
-              case e: Throwable =>
+              try {
+                val line = request.in.read()
+                if (line != -1 && line != 65535) {
+                  request.in.unread(line)
+                  workersQueue.add(request)
+                  break()
+                } else {
+                  request.cleanup()
                   break
-            }
-            }else{
+                }
+              } catch {
+                case e: Throwable =>
+                  break
+              }
+            } else {
               workersQueue.add(request)
               break()
             }
@@ -249,14 +249,14 @@ object Main extends App {
   for (i <- 1 to Configuration.generators) {
     lib.actionRouters.connectionRouters.workers ! server.Fire(i, workersQueue)
   }
-  serverSocket.setPerformancePreferences(0,2,0)
+  serverSocket.setPerformancePreferences(0, 2, 0)
   var i = 0;
   while (true) {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
     clientSocket.setTcpNoDelay(true)
     clientSocket.isConnected
-  //  log.log(Level.INFO, "-----------is it tcp_nodel-----creating connection-------------------" + i+"----"+clientSocket.getTcpNoDelay)
+    log.log(Level.INFO, "-----------is it tcp_nodel-----creating connection-------------------" + i + "----" + clientSocket.getTcpNoDelay)
 
 
     val out = new BufferedOutputStream(clientSocket.getOutputStream, 1024)
