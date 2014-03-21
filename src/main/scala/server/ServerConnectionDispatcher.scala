@@ -54,14 +54,13 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             ready = request.in.ready()
           }catch{
             case e: Throwable =>
-
+              break()
           }
 
 
           if (ready) {
             try {
               success = readRequest(request)
-
             }
             catch {
               case e: Throwable => logger.log(akka.event.Logging.LogLevel(3), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
@@ -115,7 +114,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     var transaction: SingleTransaction = null
 
     try {
-
       header = readHeader(request.in)
 
       if (header == "") {
@@ -125,6 +123,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
       } else {
         transaction = new SingleTransaction(header)
+
         transaction.body = readBody(request, request.in, transaction.postSize)
       }
 
@@ -182,42 +181,39 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   }
 
   def readHeader(in: Reader): String = {
-    var headerCharArray = new ArrayBuffer[Char]
+
+    var strinBuilder = new scala.collection.mutable.StringBuilder(1000)
     var break: Boolean = false;
     while (!break) {
       //val char = in.read
-
       val buf = Array.ofDim[Char](3000)
 
       val value = in.read(buf)
 
-
-
-
       if (value == -1) {
         return ""
       }
+
+
       breakable {
         for (i <- 0 to value - 1) {
-          if (headerCharArray.size >= 3) {
-            val size = headerCharArray.size
-            if (buf(i) == '\n' && headerCharArray(size - 2) == '\n') {
-             // headerCharArray = headerCharArray.drop(1)
-
+          if (strinBuilder.size >= 3) {
+            if (buf(i) == '\n' && strinBuilder(strinBuilder.size - 2) == '\n') {
               break = true
               break
             }
           }
-          headerCharArray+=(buf(i))
+          strinBuilder.append(buf(i))
         }
       }
 
-
     }
     val header =
-      if (headerCharArray.size != 0)
-        headerCharArray.mkString("")
+      if (strinBuilder.size != 0)
+      //  (for(i <- headerCharArray) yield(i))(collection.breakOut)
+        strinBuilder.mkString
       else ""
+
     header
   }
 }
