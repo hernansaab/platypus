@@ -43,7 +43,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           val request = workersQueue.poll()
           if (request == null) break()
 
-          if(request.socket.isClosed){
+          if(  (System.nanoTime() - request.lastRead)/1000000 > Configuration.timeoutMilliseconds){
             break()
           }
           var success = true
@@ -53,6 +53,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             ready = request.in.ready()
           } catch {
             case e: Throwable =>
+              logger.log(akka.event.Logging.LogLevel(2), ("Connection  closed by cli timeout??"))
               break()
           }
           if (ready) {
@@ -97,6 +98,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
     try {
       header = readHeader(request.in)
 
+      request.lastRead = System.nanoTime()
       if (header == "") {
         transaction = new SingleTransaction(null)
         request.addTransaction(transaction)
@@ -106,10 +108,12 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         transaction = new SingleTransaction(header)
 
         transaction.body = readBody(request, request.in, transaction.postSize)
+        request.lastRead = System.nanoTime()
       }
 
     } catch {
       case e: Throwable => {
+        logger.log(akka.event.Logging.LogLevel(2), ("Cssssssonnection  closed by cli timeout??"))
 
         header = ""
         transaction = new SingleTransaction(null)

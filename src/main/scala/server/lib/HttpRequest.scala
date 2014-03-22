@@ -12,7 +12,7 @@ import java.net.Socket
 /**
  * Created by hernansaab on 2/27/14.
  */
-class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _inputStream: InputStreamReader, _socket:Socket) {
+class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _inputStream: InputStreamReader) {
 
  private val log = Logger.getLogger(getClass.toString)
  private var current:SingleTransaction = null
@@ -21,18 +21,18 @@ class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _input
   val out:BufferedOutputStream = _out
   var startTime = ts
   var notReadyCount = 0
-  val socket = _socket
+  var lastRead = System.nanoTime()
   val inputStream: InputStreamReader = _inputStream
   @volatile var currentTransactionIndex:AtomicInteger = new AtomicInteger(-1)
   @volatile var transactionCount:AtomicInteger = new AtomicInteger(0)
   @volatile var transactionsQ:LinkedBlockingQueue[SingleTransaction] = new LinkedBlockingQueue[SingleTransaction]()
   /**
    * print a string to output connection and close it
-   * @param text
+
    * @return status successfull
    */
   def copy():HttpRequest = {
-    val r = new HttpRequest(in, out, ts, inputStream, socket)
+    val r = new HttpRequest(in, out, ts, inputStream)
     r.transactionsQ = transactionsQ
     r.currentTransactionIndex = currentTransactionIndex
     r.transactionCount = transactionCount
