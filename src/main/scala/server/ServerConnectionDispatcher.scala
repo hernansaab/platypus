@@ -44,6 +44,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           if (request == null) break()
 
           if(  (System.nanoTime() - request.lastRead)/1000000 > Configuration.timeoutMilliseconds){
+            request.cleanup()
             break()
           }
           var success = true
