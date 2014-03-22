@@ -2,6 +2,7 @@ package server.lib
 
 import scala.util.matching.Regex
 import java.io._
+import java.net.Socket
 
 /**
  * Created by hernansaab on 2/27/14.
@@ -9,8 +10,8 @@ import java.io._
 object RequestConnectionFactory {
 
 
-  def generateRequestConnection(in:PushbackReader, out:BufferedOutputStream, ts:Long, stream:InputStreamReader): HttpRequest = {
-    val request = new HttpRequest(in, out, ts, stream)
+  def generateRequestConnection(in:PushbackReader, out:BufferedOutputStream, ts:Long, stream:InputStreamReader, socket:Socket): HttpRequest = {
+    val request = new HttpRequest(in, out, ts, stream, socket)
    /* val(command, path, argument, httpVersion) = Utils.parseGetCommand(header)
     request.command = command
     request.path = path

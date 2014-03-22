@@ -42,7 +42,12 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         breakable {
           val request = workersQueue.poll()
           if (request == null) break()
+
+          if(request.socket.isClosed){
+            break()
+          }
           var success = true
+
           var ready = false
           try {
             ready = request.in.ready()
@@ -61,27 +66,8 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 success = false
             }
           } else {
-            request.notReadyCount += 1
-            if (request.notReadyCount == 100) {
-              request.notReadyCount = 0
-              try {
-                val line = request.in.read()
-                if (line != -1 && line != 65535) {
-                  request.in.unread(line)
-                  workersQueue.add(request)
-                  break()
-                } else {
-                  request.cleanup()
-                  break
-                }
-              } catch {
-                case e: Throwable =>
-                  break
-              }
-            } else {
-              workersQueue.add(request)
-              break()
-            }
+            workersQueue.add(request)
+            break()
           }
           if (!success) break
           var writeStatus = 1;
@@ -262,7 +248,7 @@ object Main extends App {
     val out = new BufferedOutputStream(clientSocket.getOutputStream, 1024)
     val stream = new InputStreamReader(clientSocket.getInputStream)
     val in = new PushbackReader(new BufferedReader((stream), 1000), 1000)
-    val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream)
+    val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream, clientSocket)
     workersQueue.offer(request)
 
   }

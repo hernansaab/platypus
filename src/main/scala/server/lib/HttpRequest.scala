@@ -7,11 +7,12 @@ import org.joda.time.{LocalDate, DateTime}
 import java.security.SecureRandom
 import java.util.logging.{Level, Logger}
 import java.util.concurrent.{LinkedBlockingQueue, SynchronousQueue, ConcurrentLinkedDeque}
+import java.net.Socket
 
 /**
  * Created by hernansaab on 2/27/14.
  */
-class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _inputStream: InputStreamReader) {
+class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _inputStream: InputStreamReader, _socket:Socket) {
 
  private val log = Logger.getLogger(getClass.toString)
  private var current:SingleTransaction = null
@@ -20,6 +21,7 @@ class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _input
   val out:BufferedOutputStream = _out
   var startTime = ts
   var notReadyCount = 0
+  val socket = _socket
   val inputStream: InputStreamReader = _inputStream
   @volatile var currentTransactionIndex:AtomicInteger = new AtomicInteger(-1)
   @volatile var transactionCount:AtomicInteger = new AtomicInteger(0)
@@ -30,7 +32,7 @@ class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _input
    * @return status successfull
    */
   def copy():HttpRequest = {
-    val r = new HttpRequest(in, out, ts, inputStream)
+    val r = new HttpRequest(in, out, ts, inputStream, socket)
     r.transactionsQ = transactionsQ
     r.currentTransactionIndex = currentTransactionIndex
     r.transactionCount = transactionCount
