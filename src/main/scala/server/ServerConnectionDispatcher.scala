@@ -55,6 +55,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           } catch {
             case e: Throwable =>
               logger.log(akka.event.Logging.LogLevel(2), ("Connection  closed by cli timeout??"))
+              request.cleanup()
               break()
           }
           if (ready) {
@@ -252,7 +253,7 @@ object Main extends App {
 
     val out = new BufferedOutputStream(clientSocket.getOutputStream, 1024)
     val stream = new InputStreamReader(clientSocket.getInputStream)
-    val in = new PushbackReader(new BufferedReader((stream), 1000), 1000)
+    val in = new BufferedReader((stream), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream, clientSocket)
     workersQueue.offer(request)
 

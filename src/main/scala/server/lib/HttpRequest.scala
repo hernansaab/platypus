@@ -12,7 +12,7 @@ import java.net.Socket
 /**
  * Created by hernansaab on 2/27/14.
  */
-class HttpRequest(_in:PushbackReader, _out:BufferedOutputStream, ts:Long, _inputStream: InputStreamReader) {
+class HttpRequest(_in:Reader, _out:BufferedOutputStream, ts:Long, _inputStream: InputStreamReader) {
 
  private val log = Logger.getLogger(getClass.toString)
  private var current:SingleTransaction = null

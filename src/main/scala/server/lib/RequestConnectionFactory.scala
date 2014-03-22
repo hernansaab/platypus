@@ -10,7 +10,7 @@ import java.net.Socket
 object RequestConnectionFactory {
 
 
-  def generateRequestConnection(in:PushbackReader, out:BufferedOutputStream, ts:Long, stream:InputStreamReader, socket:Socket): HttpRequest = {
+  def generateRequestConnection(in:Reader, out:BufferedOutputStream, ts:Long, stream:InputStreamReader, socket:Socket): HttpRequest = {
     val request = new HttpRequest(in, out, ts, stream)
    /* val(command, path, argument, httpVersion) = Utils.parseGetCommand(header)
     request.command = command
