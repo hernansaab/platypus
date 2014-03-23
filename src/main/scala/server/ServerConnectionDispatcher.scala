@@ -58,6 +58,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
               request.cleanup()
               break()
           }
+
           if (ready) {
             try {
               success = readRequest(request)
@@ -83,7 +84,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             request.cleanup()
             break
           }
-          workersQueue.add(request)
+          workersQueue.offer(request)
         }
       }
     }
@@ -233,16 +234,20 @@ object Main extends App {
     serverSocket = new ServerSocket(Configuration.port)
     serverSocket.setReuseAddress(true);
   } else {
-    log.log(Level.SEVERE, "Port number " + Configuration.port + " is already being used.\n")
+    log.log(Level.SEVERE, "Port number " + Configuration.port + " is already being used--"+Configuration.generators)
 
   }
+  var queueArray:ArrayBuffer[LinkedBlockingQueue[HttpRequest]] = new ArrayBuffer[LinkedBlockingQueue[HttpRequest]](4)
 
-  val workersQueue: LinkedBlockingQueue[HttpRequest] = new LinkedBlockingQueue[HttpRequest]()
+  for(i <- 0 to 3){
+    queueArray.append(new LinkedBlockingQueue[HttpRequest]())
+  }
   for (i <- 1 to Configuration.generators) {
-    lib.actionRouters.connectionRouters.workers ! server.Fire(i, workersQueue)
+    lib.actionRouters.connectionRouters.workers ! server.Fire(i, queueArray(i%4))
   }
   serverSocket.setPerformancePreferences(0, 2, 0)
   var i = 0;
+  var cnt:Int = 0
   while (true) {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
@@ -255,7 +260,8 @@ object Main extends App {
     val stream = new InputStreamReader(clientSocket.getInputStream)
     val in = new BufferedReader((stream), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream, clientSocket)
-    workersQueue.offer(request)
+    queueArray(cnt%4).offer(request)
+    //workersQueue.offer(request)
 
   }
 
