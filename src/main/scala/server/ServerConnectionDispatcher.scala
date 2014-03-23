@@ -77,7 +77,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 success = false
             }
           } else {
-            delayNanoseconds(3000)
             workersQueue.add(request)
             break()
           }
