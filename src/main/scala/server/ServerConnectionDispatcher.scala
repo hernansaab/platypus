@@ -17,87 +17,87 @@ import scala.reflect.io.File
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
 import akka.event._
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.{ExecutorService, Executors, LinkedBlockingQueue}
 import scala.util.control.Breaks._
+import com.lmax.disruptor.EventFactory
+import com.lmax.disruptor.EventHandler
+import com.lmax.disruptor.RingBuffer
+import com.lmax.disruptor.dsl.Disruptor
+
+;
 
 /**
  * Created by hernansaab on 2/26/14.
  */
 
 
-class ServerConnectionDispatcher() extends Actor with ActorLogging {
+class ServerConnectionDispatcher extends EventHandler[ValueEvent] {
 
-  import context.dispatcher
 
-  val logger: akka.event.LoggingAdapter = Helpers.logger(context.system, self.getClass.toString)
+  private val log = Logger.getLogger(getClass.toString)
 
-  logger.log(akka.event.Logging.LogLevel(2), "constructing stuff")
-
-  def delayNanoseconds(delay:Int) = {
+  def delayNanoseconds(delay: Int) = {
     val t = System.nanoTime()
-    while( (System.nanoTime() - t) < delay){
+    while ((System.nanoTime() - t) < delay) {
       ////
     }
   }
 
-  def receive: Actor.Receive = {
+  def onEvent(event: ValueEvent, sequence: Long, endOfBatch: Boolean):Unit = {
 
-    case server.Fire(worker, workersQueue) => {
-      logger.log(akka.event.Logging.LogLevel(3), "----------start of receiver queue -----------" + workersQueue)
+    val request = event.request
+    if (request == null) break()
 
-      while (true) {
-        breakable {
-          val request = workersQueue.poll()
-          if (request == null) break()
+    if ((System.nanoTime() - request.lastRead) / 1000000 > Configuration.timeoutMilliseconds) {
+      request.cleanup()
+      return
+    }
+    var success = true
 
-          if(  (System.nanoTime() - request.lastRead)/1000000 > Configuration.timeoutMilliseconds){
-            request.cleanup()
-            break()
-          }
-          var success = true
+    var ready = false
+    try {
+      ready = request.in.ready()
+    } catch {
+      case e: Throwable =>
+        log.log(Level.WARNING, ("Connection  closed by cli timeout??"))
+        request.cleanup()
+        return
+    }
 
-          var ready = false
-          try {
-            ready = request.in.ready()
-          } catch {
-            case e: Throwable =>
-              logger.log(akka.event.Logging.LogLevel(2), ("Connection  closed by cli timeout??"))
-              request.cleanup()
-              break()
-          }
-
-          if (ready) {
-            try {
-              success = readRequest(request)
-            }
-            catch {
-              case e: Throwable => logger.log(akka.event.Logging.LogLevel(3), ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
-                request.addTransaction(new SingleTransaction(null))
-                request.cleanup()
-                success = false
-            }
-          } else {
-            workersQueue.add(request)
-            break()
-          }
-          if (!success) break
-          var writeStatus = 1;
-          writeStatus = ServerRouter.route(request)
-          if (writeStatus == 2) {
-            //     logger.log(akka.event.Logging.LogLevel(3), "Total delay--" + ((ts3 - ts1) / 1000) +
-            //          "--read delay-->" + ((ts2 - ts1) / 1000) + "---and route delay is ---- " + (ts3 - ts2) / 1000)
-          }
-          if (writeStatus == 0 || !success) {
-            request.cleanup()
-            break
-          }
-          workersQueue.offer(request)
-        }
+    if (ready) {
+      try {
+        success = readRequest(request)
       }
+      catch {
+        case e: Throwable => log.log(Level.WARNING, ("Connection possibly closed by client---" + e.getMessage).+("\n---"))
+          request.addTransaction(new SingleTransaction(null))
+          request.cleanup()
+          success = false
+      }
+    } else {
+      val seq:Long = actionRouters.connectionRouters.ringBuffer.next()
+      val valueEvent: ValueEvent =  actionRouters.connectionRouters.ringBuffer.get(seq)
+      valueEvent.request = request
+      actionRouters.connectionRouters.ringBuffer.publish(seq)
+      return
     }
-    case _ => {
-      logger.log(akka.event.Logging.LogLevel(3), "------------------woa--------- errr receiving")
+    if (!success) break
+    var writeStatus = 1;
+    writeStatus = ServerRouter.route(request)
+    if (writeStatus == 2) {
+      //     logger.log(akka.event.Logging.LogLevel(3), "Total delay--" + ((ts3 - ts1) / 1000) +
+      //          "--read delay-->" + ((ts2 - ts1) / 1000) + "---and route delay is ---- " + (ts3 - ts2) / 1000)
     }
+    if (writeStatus == 0 || !success) {
+      request.cleanup()
+      return
+    }
+    val seq:Long = actionRouters.connectionRouters.ringBuffer.next()
+    val valueEvent: ValueEvent =  actionRouters.connectionRouters.ringBuffer.get(seq)
+    valueEvent.request = request;
+    actionRouters.connectionRouters.ringBuffer.publish(seq)
+    return
+
   }
 
 
@@ -123,7 +123,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
     } catch {
       case e: Throwable => {
-        logger.log(akka.event.Logging.LogLevel(2), ("Cssssssonnection  closed by cli timeout??"))
+        log.log(Level.WARNING, ("Cssssssonnection  closed by cli timeout??"))
 
         header = ""
         transaction = new SingleTransaction(null)
@@ -157,7 +157,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
           return ""
         }
 
-        logger.log(akka.event.Logging.LogLevel(3), "-----size body------" + buf.size)
+        log.log(Level.WARNING, "-----size body------" + buf.size)
         for (i <- 0 to value - 1) {
           bodyCharArray += buf(i)
           postSizeAcc += 1
@@ -213,6 +213,22 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
   }
 }
 
+class ValueEvent {
+  var request:HttpRequest = null
+  def getValue():HttpRequest = {
+    return request
+  }
+  def setValue(_request:HttpRequest) = {
+    request = _request
+  }
+}
+object ValueEvent {
+  def EVENT_FACTORY:EventFactory[ValueEvent]  = new EventFactory[ValueEvent]() {
+    def  newInstance():ValueEvent = {
+      return new ValueEvent();
+    }
+  };
+}
 
 object Main extends App {
   val system: ActorSystem = ActorSystem.create();
@@ -241,20 +257,22 @@ object Main extends App {
     serverSocket = new ServerSocket(Configuration.port)
     serverSocket.setReuseAddress(true);
   } else {
-    log.log(Level.SEVERE, "Port number " + Configuration.port + " is already being used--"+Configuration.generators)
+    log.log(Level.SEVERE, "Port number " + Configuration.port + " is already being used--" + Configuration.generators)
 
   }
-  var queueArray:ArrayBuffer[LinkedBlockingQueue[HttpRequest]] = new ArrayBuffer[LinkedBlockingQueue[HttpRequest]](4)
 
-  for(i <- 0 to 3){
-    queueArray.append(new LinkedBlockingQueue[HttpRequest]())
-  }
-  for (i <- 1 to Configuration.generators) {
-    lib.actionRouters.connectionRouters.workers ! server.Fire(i, queueArray(i%1))
-  }
+  val exec:ExecutorService = Executors.newCachedThreadPool();
+  // Preallocate RingBuffer with 1024 ValueEvents
+  val disruptor: Disruptor[ValueEvent] = new Disruptor[ValueEvent](ValueEvent.EVENT_FACTORY, 1024, exec);
+
+
+  val handler = new ServerConnectionDispatcher()
+  disruptor.handleEventsWith(handler);
+  actionRouters.connectionRouters.ringBuffer  = disruptor.start();
+
   serverSocket.setPerformancePreferences(0, 2, 0)
   var i = 0;
-  var cnt:Int = 0
+  var cnt: Int = 0
   while (true) {
     val clientSocket = serverSocket.accept;
     clientSocket.setSoTimeout(Configuration.timeoutMilliseconds)
@@ -267,7 +285,14 @@ object Main extends App {
     val stream = new InputStreamReader(clientSocket.getInputStream)
     val in = new BufferedReader((stream), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream, clientSocket)
-    queueArray(cnt%1).offer(request)
+
+
+    val seq:Long = actionRouters.connectionRouters.ringBuffer.next();
+    val valueEvent:ValueEvent = actionRouters.connectionRouters.ringBuffer.get(seq)
+    valueEvent.request = request;
+    actionRouters.connectionRouters.ringBuffer.publish(seq);
+
+
     //workersQueue.offer(request)
 
   }

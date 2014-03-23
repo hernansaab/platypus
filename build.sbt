@@ -50,6 +50,8 @@ libraryDependencies += "io.spray" % "spray-can" % "1.3.0"
 
 libraryDependencies += "com.cloudphysics" %% "jerkson" % "0.6.1"
 
+libraryDependencies += "com.lmax" % "disruptor" % "3.2.1"
+
 logLevel := Level.Info
 
 lazy val runPlatypus = taskKey[Unit]("run in the background and kill previous job")

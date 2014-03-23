@@ -30,7 +30,7 @@ object Booter {
     actionRouters.connectionRouters.system = ActorSystem()
     val actors = new ListBuffer[ActorRef]
 
-    actionRouters.connectionRouters.workers = actionRouters.connectionRouters.system.actorOf(FromConfig.props(Props[ServerConnectionDispatcher]), "transactor")
+ //   actionRouters.connectionRouters.workers = actionRouters.connectionRouters.system.actorOf(FromConfig.props(Props[ServerConnectionDispatcher]), "transactor")
 
 
 
