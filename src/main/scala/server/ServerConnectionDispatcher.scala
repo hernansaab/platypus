@@ -33,6 +33,13 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
   logger.log(akka.event.Logging.LogLevel(2), "constructing stuff")
 
+  def delayNanoseconds(delay:Int) = {
+    val t = System.nanoTime()
+    while( (System.nanoTime() - t) < delay){
+      ////
+    }
+  }
+
   def receive: Actor.Receive = {
 
     case server.Fire(worker, workersQueue) => {
@@ -70,6 +77,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
                 success = false
             }
           } else {
+            delayNanoseconds(3000)
             workersQueue.add(request)
             break()
           }
@@ -243,7 +251,7 @@ object Main extends App {
     queueArray.append(new LinkedBlockingQueue[HttpRequest]())
   }
   for (i <- 1 to Configuration.generators) {
-    lib.actionRouters.connectionRouters.workers ! server.Fire(i, queueArray(i%4))
+    lib.actionRouters.connectionRouters.workers ! server.Fire(i, queueArray(i%1))
   }
   serverSocket.setPerformancePreferences(0, 2, 0)
   var i = 0;
@@ -260,7 +268,7 @@ object Main extends App {
     val stream = new InputStreamReader(clientSocket.getInputStream)
     val in = new BufferedReader((stream), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream, clientSocket)
-    queueArray(cnt%4).offer(request)
+    queueArray(cnt%1).offer(request)
     //workersQueue.offer(request)
 
   }
