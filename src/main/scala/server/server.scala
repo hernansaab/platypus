@@ -2,7 +2,7 @@ package  server
 import java.io.IOException
 import java.net.{DatagramSocket, ServerSocket, Socket}
 import lib._
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.{ArrayBlockingQueue, LinkedBlockingQueue}
 
 
 /**
@@ -13,7 +13,7 @@ object server {
   case class TransactionConnectionContainerWriter(request: HttpRequest)
   case class TransactionConnectionContainerReader(request: HttpRequest)
   case class ConnectionReadyWaiter(request: HttpRequest)
-  case class Fire(worker: Int, workersQueue:LinkedBlockingQueue[HttpRequest])
+  case class Fire(worker: Int, workersQueue:ArrayBlockingQueue[HttpRequest])
 
   def isPortAvailable(port: Int): Boolean = {
     if (port < 10 || port > 65533) {

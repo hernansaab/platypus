@@ -17,7 +17,7 @@ import scala.reflect.io.File
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
 import akka.event._
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.{ArrayBlockingQueue, LinkedBlockingQueue}
 import scala.util.control.Breaks._
 
 /**
@@ -244,10 +244,10 @@ object Main extends App {
     log.log(Level.SEVERE, "Port number " + Configuration.port + " is already being used--"+Configuration.generators)
 
   }
-  var queueArray:ArrayBuffer[LinkedBlockingQueue[HttpRequest]] = new ArrayBuffer[LinkedBlockingQueue[HttpRequest]](4)
+  var queueArray:ArrayBuffer[ArrayBlockingQueue[HttpRequest]] = new ArrayBuffer[ArrayBlockingQueue[HttpRequest]](4)
 
   for(i <- 0 to 3){
-    queueArray.append(new LinkedBlockingQueue[HttpRequest]())
+    queueArray.append(new ArrayBlockingQueue[HttpRequest](4096))
   }
   for (i <- 1 to Configuration.generators) {
     lib.actionRouters.connectionRouters.workers ! server.Fire(i, queueArray(i%1))
