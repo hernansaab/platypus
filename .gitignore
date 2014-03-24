@@ -1,4 +1,5 @@
 target/*
+target/.history
 !target/.gitkeep
 .idea
 actorTest.iml
