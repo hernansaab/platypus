@@ -1,9 +1,0 @@
-help
-project new
-help project
- 
-help
-session save
-set version := "1.0"
-session save
-exit
