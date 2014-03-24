@@ -46,6 +46,7 @@ class ServerConnectionDispatcher extends EventHandler[ValueEvent] {
   def onEvent(event: ValueEvent, sequence: Long, endOfBatch: Boolean):Unit = {
 
     val request = event.request
+    val ringBufferIndex = event.ringBufferIndex
     if (request == null) break()
 
     if ((System.nanoTime() - request.lastRead) / 1000000 > Configuration.timeoutMilliseconds) {
@@ -75,10 +76,10 @@ class ServerConnectionDispatcher extends EventHandler[ValueEvent] {
           success = false
       }
     } else {
-      val seq:Long = actionRouters.connectionRouters.ringBuffer.next()
-      val valueEvent: ValueEvent =  actionRouters.connectionRouters.ringBuffer.get(seq)
+      val seq:Long = actionRouters.connectionRouters.ringBuffer(ringBufferIndex).next()
+      val valueEvent: ValueEvent =  actionRouters.connectionRouters.ringBuffer(ringBufferIndex).get(seq)
       valueEvent.request = request
-      actionRouters.connectionRouters.ringBuffer.publish(seq)
+      actionRouters.connectionRouters.ringBuffer(ringBufferIndex).publish(seq)
       return
     }
     if (!success) break
@@ -92,10 +93,10 @@ class ServerConnectionDispatcher extends EventHandler[ValueEvent] {
       request.cleanup()
       return
     }
-    val seq:Long = actionRouters.connectionRouters.ringBuffer.next()
-    val valueEvent: ValueEvent =  actionRouters.connectionRouters.ringBuffer.get(seq)
+    val seq:Long = actionRouters.connectionRouters.ringBuffer(ringBufferIndex).next()
+    val valueEvent: ValueEvent =  actionRouters.connectionRouters.ringBuffer(ringBufferIndex).get(seq)
     valueEvent.request = request;
-    actionRouters.connectionRouters.ringBuffer.publish(seq)
+    actionRouters.connectionRouters.ringBuffer(ringBufferIndex).publish(seq)
     return
 
   }
@@ -215,6 +216,7 @@ class ServerConnectionDispatcher extends EventHandler[ValueEvent] {
 
 class ValueEvent {
   var request:HttpRequest = null
+  var ringBufferIndex = 0
   def getValue():HttpRequest = {
     return request
   }
@@ -260,17 +262,16 @@ object Main extends App {
     log.log(Level.SEVERE, "Port number " + Configuration.port + " is already being used--" + Configuration.generators)
 
   }
-
+for(i <- 0 to Configuration.generators){
   val exec:ExecutorService = Executors.newCachedThreadPool();
   // Preallocate RingBuffer with 1024 ValueEvents
   val disruptor: Disruptor[ValueEvent] = new Disruptor[ValueEvent](ValueEvent.EVENT_FACTORY, 1024, exec);
-
-
   val handler = new ServerConnectionDispatcher()
   disruptor.handleEventsWith(handler);
-  actionRouters.connectionRouters.ringBuffer  = disruptor.start();
+  actionRouters.connectionRouters.ringBuffer.append(disruptor.start());
+}
 
-  serverSocket.setPerformancePreferences(0, 2, 0)
+
   var i = 0;
   var cnt: Int = 0
   while (true) {
@@ -286,14 +287,18 @@ object Main extends App {
     val in = new BufferedReader((stream), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream, clientSocket)
 
+    val rb = cnt % Configuration.generators
 
-    val seq:Long = actionRouters.connectionRouters.ringBuffer.next();
-    val valueEvent:ValueEvent = actionRouters.connectionRouters.ringBuffer.get(seq)
-    valueEvent.request = request;
-    actionRouters.connectionRouters.ringBuffer.publish(seq);
+    val seq:Long = actionRouters.connectionRouters.ringBuffer(rb).next();
+    val valueEvent:ValueEvent = actionRouters.connectionRouters.ringBuffer(rb).get(seq)
+    valueEvent.request = request
+    valueEvent.ringBufferIndex = rb
+    actionRouters.connectionRouters.ringBuffer(rb).publish(seq);
 
 
     //workersQueue.offer(request)
+
+    cnt += cnt+1
 
   }
 

@@ -74,8 +74,8 @@ runPlatypus := {
   // val p:java.lang.Process = java.lang.Runtime.getRuntime().exec("sbt run >>file.txt 2>&1");
   //val p:java.lang.Process = java.lang.Runtime.getRuntime().exec(Array("bash", "sbt run >>/home/solr/benchmarks/platypus/log.txt 2>&1" ));
   val builder:java.lang.ProcessBuilder = new java.lang.ProcessBuilder("sudo", "sbt", "run");
-  builder.redirectOutput(new File("log.log"));
-  builder.redirectError(new File("log.log"));
+ // builder.redirectOutput(new File("log.log"));
+ // builder.redirectError(new File("log.log"));
   builder.start();
 }
 
