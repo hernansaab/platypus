@@ -66,6 +66,47 @@ class SingleTransaction(_header:String) {
       result
     }
 
+
+    def fastSplitSpaceAndNewLine(text: String, emptyStrings: Boolean): ArrayBuffer[String] = {
+      val result = new ArrayBuffer[String]()
+      if (text != null && text.length > 0) {
+        var index1 = 0
+
+        var index2 = {
+          val x  = text.indexOf(' ')
+          val y = text.indexOf('\n')
+          if(x < y){
+            x
+          }else{
+            y
+          }
+        }
+        while (index2 >= 0 ) {
+
+
+          val token = text.substring(index1, index2)
+          result+=token
+          index1 = index2 + 1
+
+          index2 = {
+            val x  = text.indexOf(' ', index1)
+            val y = text.indexOf('\n', index1)
+            if(x < y){
+              x
+            }else{
+              y
+            }
+          }
+        }
+        if (index1 < text.length - 1) {
+          result+=(text.substring(index1))
+        }
+      }
+      result
+    }
+
+
+
     def parseGetCommand(header: String): (String, String, String, String, String, String, String, Int) = {
 
       /**
@@ -83,12 +124,12 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8
       Cache-Control: no-cache
        */
 
-      val ts1 = System.nanoTime()
+    //  val ts1 = System.nanoTime()
 
  //    val headerArray =  header.replace('\n', ' ').split(" ")
      // headerArray = StringUtils.split(header.replace('\n', ' '), " ", true)
-       val headerArray = fastSplit(header.replace('\n', ' '), ' ', true)
-      log.log(Level.WARNING, "time to generate header------"+ (System.nanoTime() - ts1)/1000)
+       val headerArray = fastSplitSpaceAndNewLine(header, true)
+   //   log.log(Level.WARNING, "time to generate header------"+ (System.nanoTime() - ts1)/1000)
 
       val command = headerArray(0)
       val httpVersion = headerArray(2)
