@@ -2,6 +2,7 @@ package server.lib
 
 import scala.collection.mutable.ArrayBuffer
 import java.util.logging.{Level, Logger}
+import java.util.StringTokenizer
 
 /**
  * Created by hernansaab on 3/8/14.
@@ -41,6 +42,26 @@ class SingleTransaction(_header:String) {
         else list.head.toInt
       size
     }
+
+
+    def split(delim: String, line: String): Array[String] = {
+      val tokens = new StringTokenizer(line, delim, true)
+      var previous = ""
+      val v = new java.util.Vector[String]
+      while (tokens.hasMoreTokens()) {
+        val token = tokens.nextToken()
+        if ("," != token) {
+          v.add(token)
+        } else if ("," == previous) {
+          v.add("")
+        } else {
+          previous = token
+        }
+      }
+      v.toArray(Array.ofDim[String](v.size)).asInstanceOf[Array[String]]
+    }
+
+
     def parseGetCommand(header: String): (String, String, String, String, String, String, String, Int) = {
 
       /**
@@ -58,14 +79,13 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8
       Cache-Control: no-cache
        */
 
+   //   val ts1 = System.nanoTime()
 
-      val splitLines = header.split("\n").map(
-        _.split(" ")
-      )
+
       val headerArray:ArrayBuffer[String] = new ArrayBuffer[String]
-      for( line <- splitLines){
-        headerArray++=line
-      }
+        headerArray++=  header.replace('\n', ' ').split(" ")
+
+     // log.log(Level.WARNING, "time to generate header------"+ (System.nanoTime() - ts1)/1000)
 
       val command = headerArray(0)
       val httpVersion = headerArray(2)
@@ -113,33 +133,7 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8
         }
       }
     }
-    def parseContentType(header: String): String = {
-      val pattern = "Content-Type: (\\d+)".r
-      var list = pattern.findAllIn(header).matchData.map(m => m.group(1)).toList
-      var contentType =
-        if (list.size == 0) ""
-        else list.head
 
-      if(contentType == null)
-         contentType = ""
-      contentType
-    }
-    def parseContentEncoding(header: String): String = {
-      val pattern = "Content-Encoding:\\s(.+)".r
-      var list = pattern.findAllIn(header).matchData.map(m => m.group(1)).toList
-      val value =
-        if (list.size == 0) ""
-        else list.head
-      value
-    }
-    def parseConnectionType(header: String): String = {
-      val pattern = "Connection:\\s(.+)".r
-      var list = pattern.findAllIn(header).matchData.map(m => m.group(1)).toList
-
-      if (list.size == 0) "keep-alive"
-      else list.head.toLowerCase()
-
-    }
 
   }
 }

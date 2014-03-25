@@ -28,6 +28,8 @@ libraryDependencies += "joda-time" % "joda-time" % "2.0"
 
 libraryDependencies += "log4j" % "log4j" % "1.2.14"
 
+libraryDependencies += "commons-primitives" % "commons-primitives" % "20041207.202534"
+
 resolvers ++= Seq(
   "Sonatype Releases" at "http://oss.sonatype.org/content/repositories/releases"
 )

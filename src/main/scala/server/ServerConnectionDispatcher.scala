@@ -47,8 +47,7 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
 
       while (true) {
         breakable {
-          val request = workersQueue.poll()
-          if (request == null) break()
+          val request = workersQueue.take()
 
           if(  (System.nanoTime() - request.lastRead)/1000000 > Configuration.timeoutMilliseconds){
             request.cleanup()
