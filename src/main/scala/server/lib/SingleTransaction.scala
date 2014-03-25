@@ -3,6 +3,10 @@ package server.lib
 import scala.collection.mutable.ArrayBuffer
 import java.util.logging.{Level, Logger}
 import java.util.StringTokenizer
+import scala.collection.immutable.List
+import scala.List
+import scala.collection.mutable
+import java.util
 
 /**
  * Created by hernansaab on 3/8/14.
@@ -44,23 +48,23 @@ class SingleTransaction(_header:String) {
     }
 
 
-    def split(delim: String, line: String): Array[String] = {
-      val tokens = new StringTokenizer(line, delim, true)
-      var previous = ""
-      val v = new java.util.Vector[String]
-      while (tokens.hasMoreTokens()) {
-        val token = tokens.nextToken()
-        if ("," != token) {
-          v.add(token)
-        } else if ("," == previous) {
-          v.add("")
-        } else {
-          previous = token
+    def fastSplit(text: String, separator: Char, emptyStrings: Boolean): ArrayBuffer[String] = {
+      val result = new ArrayBuffer[String]()
+      if (text != null && text.length > 0) {
+        var index1 = 0
+        var index2 = text.indexOf(separator)
+        while (index2 >= 0) {
+          val token = text.substring(index1, index2)
+          result+=token
+          index1 = index2 + 1
+          index2 = text.indexOf(separator, index1)
+        }
+        if (index1 < text.length - 1) {
+          result+=(text.substring(index1))
         }
       }
-      v.toArray(Array.ofDim[String](v.size)).asInstanceOf[Array[String]]
+      result
     }
-
 
     def parseGetCommand(header: String): (String, String, String, String, String, String, String, Int) = {
 
@@ -79,13 +83,12 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8
       Cache-Control: no-cache
        */
 
-   //   val ts1 = System.nanoTime()
+      val ts1 = System.nanoTime()
 
-
-      val headerArray:ArrayBuffer[String] = new ArrayBuffer[String]
-        headerArray++=  header.replace('\n', ' ').split(" ")
-
-     // log.log(Level.WARNING, "time to generate header------"+ (System.nanoTime() - ts1)/1000)
+ //    val headerArray =  header.replace('\n', ' ').split(" ")
+     // headerArray = StringUtils.split(header.replace('\n', ' '), " ", true)
+       val headerArray = fastSplit(header.replace('\n', ' '), ' ', true)
+      log.log(Level.WARNING, "time to generate header------"+ (System.nanoTime() - ts1)/1000)
 
       val command = headerArray(0)
       val httpVersion = headerArray(2)
