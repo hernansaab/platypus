@@ -54,13 +54,13 @@ libraryDependencies += "com.cloudphysics" %% "jerkson" % "0.6.1"
 
 logLevel := Level.Info
 
-lazy val runPlatypus = taskKey[Unit]("run in the background and kill previous job")
+lazy val runThePlatypus = taskKey[Unit]("run in the background and kill previous job")
 
-lazy val stopPlatypus = taskKey[Unit]("stop in the background and kill previous job")
+lazy val stopThePlatypus = taskKey[Unit]("stop in the background and kill previous job")
 
 
 
-runPlatypus := {
+runThePlatypus := {
   println("----starting the platypus-----")
   if(new java.io.File("PID").exists){
     val PID = scala.io.Source.fromFile("PID").mkString.stripMargin.stripLineEnd
@@ -71,7 +71,7 @@ runPlatypus := {
       case e:Throwable => println(f"process ${PID} is no longer running")
     }
   }
-  // val p:java.lang.Process = java.lang.Runtime.getRuntime().exec("sbt run >>file.txt 2>&1");
+  //val p:java.lang.Process = java.lang.Runtime.getRuntime().exec("sbt run >>file.txt 2>&1");
   //val p:java.lang.Process = java.lang.Runtime.getRuntime().exec(Array("bash", "sbt run >>/home/solr/benchmarks/platypus/log.txt 2>&1" ));
   val builder:java.lang.ProcessBuilder = new java.lang.ProcessBuilder("sudo", "sbt", "run");
   builder.redirectOutput(new File("log.log"));
@@ -80,7 +80,7 @@ runPlatypus := {
 }
 
 
-stopPlatypus := {
+stopThePlatypus := {
   println("----stopping the platypus-----")
   if(new java.io.File("PID").exists){
     val PID = scala.io.Source.fromFile("PID").mkString.stripMargin.stripLineEnd

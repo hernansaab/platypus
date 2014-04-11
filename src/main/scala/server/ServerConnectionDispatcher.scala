@@ -54,7 +54,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
             break()
           }
           var success = true
-
           var ready = false
           try {
             ready = request.in.ready()
@@ -64,7 +63,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
               request.cleanup()
               break()
           }
-
           if (ready) {
             try {
               success = readRequest(request)
@@ -188,7 +186,6 @@ class ServerConnectionDispatcher() extends Actor with ActorLogging {
         return ""
       }
 
-
       breakable {
         for (i <- 0 to value - 1) {
           if (strinBuilder.size >= 3) {
@@ -261,11 +258,12 @@ object Main extends App {
     clientSocket.isConnected
     log.log(Level.INFO, "-----------is it tcp_nodel-----creating connection-------------------" + i + "----" + clientSocket.getTcpNoDelay)
 
-
     val out = new BufferedOutputStream(clientSocket.getOutputStream, 1024)
     val stream = new InputStreamReader(clientSocket.getInputStream)
     val in = new BufferedReader((stream), 1000)
     val request = RequestConnectionFactory.generateRequestConnection(in, out, System.nanoTime(), stream, clientSocket)
+
+
     queueArray(cnt%1).offer(request)
     //workersQueue.offer(request)
 

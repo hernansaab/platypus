@@ -14,12 +14,13 @@ object ApplicationRouter {
   private val log = Helpers.logger(getClass.toString)
 
   def runViewController(r: HttpRequest):Boolean = {
+    log.log(Level.WARNING, "path-----"+ r.x.path)
+
+    /*
     r.x.path match {
 
       case "/platypus/benchmark/json" => {
-
         r@<<- views.Json.<--(controllers.ShoppingController.response4("blah"))
-
         true
       }
 
@@ -28,10 +29,12 @@ object ApplicationRouter {
         r@<<- x //controller renders view directly through a ssp file set in the controller/action DefaultController/index
 
       }
+
       case r"/index2"=> {
         r@<<- controllers.DefaultController.index2(r.x.command) //controller renders view directly through a ssp file set in the controller/action DefaultController/index
 
       }
+
       case r"/index3"=> {
         r@<<- controllers.DefaultController.index3(r.x.command) //controller renders view directly through a ssp file set in the controller/action DefaultController/index
 
@@ -49,7 +52,6 @@ object ApplicationRouter {
         }
       }
 
-      case r"^.*/json$$" => r@<<- views.Json.<--(controllers.ShoppingController.unsupported("blah"))
 
 
      // case r"^.+/json$$" => r@<<- views.Json.genericUnsupported(r.x.path)
@@ -57,6 +59,26 @@ object ApplicationRouter {
       case _ => r@<<- controllers.DefaultController.index2(r.x.command)
     }
 
+*/
+    var split = HeaderUtils.fastSplit(r.x.path, '/', true)
+    if(split.size <= 1)  return false
+    split(1) match {
+      case "search" => {
+        if(split.size <= 2) return false
+        split(2) match {
+          case "resources" => {
+            return r@<<- views.Json.<--(controllers.ResourcesController.handler(r.x.command, r.x.path, split))
+          }
+          case _ => {
+            return false
+          }
+        }
 
+      }
+      case _ => {
+        return false
+      }
+    }
+    return false
   }
 }

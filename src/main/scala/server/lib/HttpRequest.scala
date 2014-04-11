@@ -86,11 +86,7 @@ class HttpRequest(_in:Reader, _out:BufferedOutputStream, ts:Long, _inputStream: 
 
 
   def cleanup(): Unit = {
-    try {
-      out.flush()
-    } catch {
-      case e: Throwable => log.log(Level.INFO, "Connection possibly timed out before we close it--1-" + e.getMessage + ("\n---") + e.getStackTrace)
-    }
+
     try {
       in.close()
     } catch {

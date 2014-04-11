@@ -1,6 +1,4 @@
 package server.lib
-
-
 import java.io.PrintWriter
 import org.slf4j.LoggerFactory
 import application.mvc.ApplicationRouter
@@ -8,17 +6,13 @@ import com.typesafe.config.ConfigFactory
 import server.{server, lib, Configuration}
 import java.util.logging.{Level, Logger}
 import akka.actor.ActorRef
-
 /**
  * Created by hernansaab on 2/27/14.
  */
-
 object ServerRouter {
 
   private val log = Helpers.logger(getClass.toString)
-
   private def _route(request: HttpRequest): Boolean = {
-    //GET /static
 
     val command =
       if (request.x.path.size > Configuration.staticPath.size)
@@ -28,12 +22,13 @@ object ServerRouter {
     if (command == Configuration.staticPath || request.x.path == "/favicon.ico") {
       _routeStatic(request);
     } else {
-      ApplicationRouter.runViewController(request)
-
+      if(!ApplicationRouter.runViewController(request)){
+        request@<<-views.headers.Common.response404NotFound
+        request.^<--()
+      }
     }
     true
   }
-
 
   /**
    *
@@ -43,26 +38,21 @@ object ServerRouter {
    *         if 2 connection open and transaction occurred
    */
   def route(request: HttpRequest): Int = {
-var action = ""
+    var action = ""
     try {
 
       request.blockingReadTransaction()
-
       request.currentTransactionIndex.incrementAndGet()
-
 
       if (request.x.isClosedTransaction) {
         log.log(Level.INFO, "Exit cause its broken")
         return 0 //break loop is it is closed
       }
-
-
       val error = _errorRoute(request)
       if (!request.x.isClosedTransaction && !error) {
 
         _route(request)
       }
-
       if(request.x.connectionType == "close" || request.x.isClosedTransaction == true){
         log.log(Level.INFO, "Exit cause its not done yet")
         return 0
